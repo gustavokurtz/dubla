@@ -5,6 +5,7 @@ import { FfmpegModule } from './ffmpeg/ffmpeg.module';
 import { ElevenlabsModule } from './elevenlabs/elevenlabs.module';
 import { OpenaiModule } from './openai/openai.module';
 import { ConfigModule } from '@nestjs/config';
+import { IngestionModule } from './ingestion/ingestion.module';
 
 
 @Module({
@@ -14,7 +15,7 @@ import { ConfigModule } from '@nestjs/config';
     }),
     FfmpegModule, 
     OpenaiModule, 
-    ElevenlabsModule],
+    ElevenlabsModule, IngestionModule],
   controllers: [AppController],
   providers: [AppService],
 })

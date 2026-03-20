@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
-import * as fs from 'fs';
+import OpenAI, { toFile } from 'openai';
 
 @Injectable()
 export class OpenaiService {
@@ -11,15 +10,15 @@ export class OpenaiService {
          this.openai = new OpenAI({apiKey: this.config.get<string>('OPENAI_API_KEY')})
     }
 
-    async transcreverVideo(caminhoAudio: string) {
+    async transcreverAudio(audioBuffer: Buffer) {
         const transcricao = await this.openai.audio.transcriptions.create({
-            file: fs.createReadStream(caminhoAudio),
+            file: await toFile(audioBuffer, 'audio.mp3'),
             model: 'whisper-1',
-            response_format: 'verbose_json', // retorna com timestamps
+            response_format: 'verbose_json',
             timestamp_granularities: ['segment'],
         });
 
-        return transcricao;
+        return transcricao.text;
     }
 
     async traduzirTexto(textoOriginal: string) {
