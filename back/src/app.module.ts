@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -12,6 +13,7 @@ import { IngestionModule } from './ingestion/ingestion.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, // disponível em todos os módulos sem reimportar
+      envFilePath: path.join(process.cwd(), '..', '.env'),
     }),
     FfmpegModule, 
     OpenaiModule, 
