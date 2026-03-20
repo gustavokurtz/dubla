@@ -1,26 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import ffmpeg = require('fluent-ffmpeg');
 import { PassThrough } from 'stream';
 import { writeFile, readFile, rm, mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { SegmentoComAudio } from '../shared/types';
 
 @Injectable()
 export class FfmpegService {
-  private async criarTemp(buffer: Buffer, extensao: string): Promise<string> {
-    const dir = await mkdtemp(join(tmpdir(), 'dubla-'));
-    const caminho = join(dir, `temp${extensao}`);
-    await writeFile(caminho, buffer);
-    return caminho;
+  private readonly logger = new Logger(FfmpegService.name);
+
+  private async criarTempDir(): Promise<string> {
+    return mkdtemp(join(tmpdir(), 'dubla-'));
   }
 
-  private async limparTemp(caminho: string): Promise<void> {
-    const dir = join(caminho, '..');
+  private async limparDir(dir: string): Promise<void> {
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
 
   async extrairAudio(videoBuffer: Buffer): Promise<Buffer> {
-    const tempVideo = await this.criarTemp(videoBuffer, '.mp4');
+    const dir = await this.criarTempDir();
+    const tempVideo = join(dir, 'input.mp4');
+    await writeFile(tempVideo, videoBuffer);
 
     try {
       return await new Promise((resolve, reject) => {
@@ -38,20 +39,54 @@ export class FfmpegService {
           .pipe(passThrough);
       });
     } finally {
-      await this.limparTemp(tempVideo);
+      await this.limparDir(dir);
     }
   }
 
-  async substituirAudio(videoBuffer: Buffer, novoAudioBuffer: Buffer): Promise<Buffer> {
-    const tempVideo = await this.criarTemp(videoBuffer, '.mp4');
-    const tempAudio = await this.criarTemp(novoAudioBuffer, '.mp3');
-    const tempSaida = await this.criarTemp(Buffer.alloc(0), '.mp4');
+  async montarTrilhaSincronizada(
+    videoBuffer: Buffer,
+    segmentos: SegmentoComAudio[],
+  ): Promise<Buffer> {
+    const dir = await this.criarTempDir();
+    const tempVideo = join(dir, 'input.mp4');
+    const tempSaida = join(dir, 'output.mp4');
+    await writeFile(tempVideo, videoBuffer);
+
+    // Salva cada segmento de áudio como arquivo
+    const segPaths: string[] = [];
+    for (let i = 0; i < segmentos.length; i++) {
+      const path = join(dir, `seg_${i}.mp3`);
+      await writeFile(path, segmentos[i].audio);
+      segPaths.push(path);
+    }
 
     try {
+      // Monta o filtro complexo:
+      // Cada segmento é atrasado (adelay) pro timestamp correto
+      // Depois todos são mixados numa trilha só
+      const inputs: string[] = [];
+      const filterParts: string[] = [];
+
+      segPaths.forEach((_, i) => {
+        const delayMs = Math.round(segmentos[i].start * 1000);
+        inputs.push('-i', segPaths[i]);
+        filterParts.push(`[${i + 1}:a]adelay=${delayMs}|${delayMs}[a${i}]`);
+      });
+
+      const mixInputs = segmentos.map((_, i) => `[a${i}]`).join('');
+      const filterComplex = [
+        ...filterParts,
+        `${mixInputs}amix=inputs=${segmentos.length}:normalize=0[aout]`,
+      ].join(';');
+
       await new Promise<void>((resolve, reject) => {
-        ffmpeg(tempVideo)
-          .addInput(tempAudio)
-          .outputOptions(['-map 0:v', '-map 1:a', '-c:v copy', '-y'])
+        const cmd = ffmpeg(tempVideo);
+
+        segPaths.forEach((p) => cmd.addInput(p));
+
+        cmd
+          .complexFilter(filterComplex, 'aout')
+          .outputOptions(['-map', '0:v', '-c:v', 'copy', '-y'])
           .output(tempSaida)
           .on('end', () => resolve())
           .on('error', (err: Error) => reject(err))
@@ -60,11 +95,7 @@ export class FfmpegService {
 
       return await readFile(tempSaida);
     } finally {
-      await Promise.all([
-        this.limparTemp(tempVideo),
-        this.limparTemp(tempAudio),
-        this.limparTemp(tempSaida),
-      ]);
+      await this.limparDir(dir);
     }
   }
 }
