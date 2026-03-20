@@ -51,17 +51,47 @@ Retorne APENAS o texto traduzido, sem explicações.`,
   }
 
   async gerarVoz(texto: string): Promise<Buffer> {
-    this.logger.log(`TTS: gerando áudio para ${texto.length} chars`);
+    const chunks = this.splitText(texto, 4000);
+    this.logger.log(`TTS: ${texto.length} chars → ${chunks.length} parte(s)`);
 
-    const response = await this.openai.audio.speech.create({
-      model: 'tts-1',
-      voice: 'onyx',
-      input: texto,
-      response_format: 'mp3',
-    });
+    const audioBuffers: Buffer[] = [];
+    for (let i = 0; i < chunks.length; i++) {
+      this.logger.log(`TTS [${i + 1}/${chunks.length}]: ${chunks[i].length} chars`);
 
-    const buffer = Buffer.from(await response.arrayBuffer());
-    this.logger.log(`TTS: OK — ${buffer.length} bytes`);
-    return buffer;
+      const response = await this.openai.audio.speech.create({
+        model: 'tts-1',
+        voice: 'onyx',
+        input: chunks[i],
+        response_format: 'mp3',
+      });
+
+      audioBuffers.push(Buffer.from(await response.arrayBuffer()));
+    }
+
+    const resultado = Buffer.concat(audioBuffers);
+    this.logger.log(`TTS: OK — ${resultado.length} bytes total`);
+    return resultado;
+  }
+
+  private splitText(text: string, maxLength: number): string[] {
+    const chunks: string[] = [];
+    let remaining = text;
+
+    while (remaining.length > 0) {
+      if (remaining.length <= maxLength) {
+        chunks.push(remaining);
+        break;
+      }
+
+      let cutIndex = remaining.lastIndexOf('. ', maxLength);
+      if (cutIndex === -1) cutIndex = remaining.lastIndexOf('? ', maxLength);
+      if (cutIndex === -1) cutIndex = remaining.lastIndexOf('! ', maxLength);
+      if (cutIndex === -1) cutIndex = maxLength;
+
+      chunks.push(remaining.slice(0, cutIndex + 1).trim());
+      remaining = remaining.slice(cutIndex + 1).trim();
+    }
+
+    return chunks;
   }
 }
