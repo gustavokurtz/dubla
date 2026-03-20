@@ -1,4 +1,6 @@
-import { useState, useCallback, useEffect, type DragEvent, type ChangeEvent } from 'react'
+import { useState, useCallback, useEffect, useRef, type DragEvent, type ChangeEvent } from 'react'
+
+const MAX_SIZE = 100 * 1024 * 1024 // 100MB
 
 const STEPS = [
   'Extraindo áudio...',
@@ -17,18 +19,17 @@ function App() {
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
-
-  const MAX_SIZE = 100 * 1024 * 1024 // 100MB
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = useCallback((f: File) => {
     if (!f.type.startsWith('video/')) {
       setError('Apenas arquivos de vídeo são aceitos')
-      setStatus('error')
+      setFile(null)
       return
     }
     if (f.size > MAX_SIZE) {
       setError('Arquivo excede o limite de 100MB')
-      setStatus('error')
+      setFile(null)
       return
     }
     setFile(f)
@@ -106,7 +107,7 @@ function App() {
               onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
               onDragLeave={() => setDragging(false)}
               onDrop={handleDrop}
-              onClick={() => document.getElementById('file-input')?.click()}
+              onClick={() => fileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
                 dragging
                   ? 'border-indigo-400 bg-indigo-50/50'
@@ -121,13 +122,17 @@ function App() {
               </p>
               <p className="text-xs text-slate-400 mt-1">Até 100MB</p>
               <input
-                id="file-input"
+                ref={fileInputRef}
                 type="file"
                 accept="video/*"
                 className="hidden"
                 onChange={handleInputChange}
               />
             </div>
+
+            {error && status === 'idle' && (
+              <p className="text-xs text-red-500 mt-2 text-center">{error}</p>
+            )}
 
             {file && (
               <div className="mt-4">
@@ -149,7 +154,7 @@ function App() {
         {status === 'uploading' && (
           <div className="text-center">
             <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-slate-900 to-indigo-500 animate-[shimmer_1.5s_ease-in-out_infinite]" />
+              <div className="h-full w-full rounded-full bg-gradient-to-r from-slate-900 via-indigo-400 to-slate-900 bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite]" />
             </div>
             <p className="text-sm text-slate-600 mt-4 font-medium">{STEPS[stepIndex]}</p>
             <p className="text-xs text-slate-400 mt-1">Isso pode levar alguns minutos</p>
