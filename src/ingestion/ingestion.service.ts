@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ElevenlabsService } from '../elevenlabs/elevenlabs.service';
 import { FfmpegService } from '../ffmpeg/ffmpeg.service';
 import { OpenaiService } from '../openai/openai.service';
 
@@ -10,7 +9,6 @@ export class IngestionService {
   constructor(
     private ffmpeg: FfmpegService,
     private openai: OpenaiService,
-    private elevenlabs: ElevenlabsService,
   ) {}
 
   async orchestratePipelineVideo(buffer: Buffer): Promise<Buffer> {
@@ -19,22 +17,25 @@ export class IngestionService {
     this.logger.log('1/5 Extraindo áudio do vídeo...');
     const audioBuffer = await this.ffmpeg.extrairAudio(buffer);
 
-    this.logger.log('2/5 Transcrevendo áudio com Whisper (segmentos)...');
-    const segmentos = await this.openai.transcreverAudio(audioBuffer);
+    this.logger.log('2/5 Transcrevendo áudio com Whisper...');
+    const transcricao = await this.openai.transcreverAudio(audioBuffer);
 
-    if (!segmentos.length) {
-      throw new Error('Whisper não retornou segmentos');
+    if (!transcricao) {
+      throw new Error('Whisper não retornou transcrição');
     }
-    this.logger.log(`${segmentos.length} segmentos encontrados`);
 
-    this.logger.log('3/5 Traduzindo segmentos para PT-BR...');
-    const segmentosTraduzidos = await this.openai.traduzirSegmentos(segmentos);
+    this.logger.log('3/5 Traduzindo texto para PT-BR...');
+    const traducao = await this.openai.traduzirTexto(transcricao);
 
-    this.logger.log('4/5 Gerando voz com ElevenLabs por segmento...');
-    const segmentosComAudio = await this.elevenlabs.gerarAudioSegmentos(segmentosTraduzidos);
+    if (!traducao) {
+      throw new Error('GPT não retornou tradução');
+    }
 
-    this.logger.log('5/5 Montando trilha sincronizada no vídeo...');
-    const videoFinal = await this.ffmpeg.montarTrilhaSincronizada(buffer, segmentosComAudio);
+    this.logger.log('4/5 Gerando voz com OpenAI TTS...');
+    const novaVoz = await this.openai.gerarVoz(traducao);
+
+    this.logger.log('5/5 Substituindo áudio no vídeo...');
+    const videoFinal = await this.ffmpeg.substituirAudio(buffer, novaVoz);
 
     this.logger.log('Pipeline concluído!');
     return videoFinal;

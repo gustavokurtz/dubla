@@ -1,17 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI, { toFile } from 'openai';
-import { Segmento } from '../shared/types';
 
 @Injectable()
 export class OpenaiService {
+  private readonly logger = new Logger(OpenaiService.name);
   private openai: OpenAI;
 
   constructor(private config: ConfigService) {
     this.openai = new OpenAI({ apiKey: this.config.get<string>('OPENAI_API_KEY') });
   }
 
-  async transcreverAudio(audioBuffer: Buffer): Promise<Segmento[]> {
+  async transcreverAudio(audioBuffer: Buffer): Promise<string> {
+    this.logger.log(`Enviando ${audioBuffer.length} bytes pro Whisper`);
+
     const transcricao = await this.openai.audio.transcriptions.create({
       file: await toFile(audioBuffer, 'audio.mp3'),
       model: 'whisper-1',
@@ -19,44 +21,47 @@ export class OpenaiService {
       timestamp_granularities: ['segment'],
     });
 
-    const segments = (transcricao as any).segments ?? [];
-
-    return segments.map((seg: any) => ({
-      start: seg.start,
-      end: seg.end,
-      texto: seg.text.trim(),
-    }));
+    this.logger.log(`Whisper transcreveu: ${transcricao.text.length} chars`);
+    return transcricao.text;
   }
 
-  async traduzirSegmentos(segmentos: Segmento[]): Promise<Segmento[]> {
-    const textoCompleto = segmentos.map((s, i) => `[${i}] ${s.texto}`).join('\n');
+  async traduzirTexto(textoOriginal: string): Promise<string> {
+    this.logger.log(`Traduzindo ${textoOriginal.length} chars`);
 
     const resposta = await this.openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content: `Você é um tradutor profissional. Traduza cada linha de inglês para português brasileiro.
-Não traduza ao pé da letra — adapte expressões idiomáticas e mantenha o tom natural.
-Mantenha o formato [número] texto traduzido. Retorne APENAS as linhas traduzidas.`,
+          content: `Você é um tradutor profissional. Traduza o texto de inglês para português brasileiro.
+Não traduza ao pé da letra — adapte expressões idiomáticas e mantenha o tom natural,
+como se a pessoa estivesse falando em português. Preserve o significado mas soe fluido.
+Retorne APENAS o texto traduzido, sem explicações.`,
         },
         {
           role: 'user',
-          content: textoCompleto,
+          content: textoOriginal,
         },
       ],
     });
 
-    const linhas = (resposta.choices[0].message.content ?? '').split('\n').filter((l) => l.trim());
+    const traducao = resposta.choices[0].message.content ?? '';
+    this.logger.log(`GPT traduziu: ${traducao.length} chars — tokens: ${resposta.usage?.total_tokens}`);
+    return traducao;
+  }
 
-    return segmentos.map((seg, i) => {
-      const linha = linhas[i] ?? '';
-      const textoTraduzido = linha.replace(/^\[\d+\]\s*/, '').trim();
-      return {
-        start: seg.start,
-        end: seg.end,
-        texto: textoTraduzido || seg.texto,
-      };
+  async gerarVoz(texto: string): Promise<Buffer> {
+    this.logger.log(`TTS: gerando áudio para ${texto.length} chars`);
+
+    const response = await this.openai.audio.speech.create({
+      model: 'tts-1',
+      voice: 'onyx',
+      input: texto,
+      response_format: 'mp3',
     });
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    this.logger.log(`TTS: OK — ${buffer.length} bytes`);
+    return buffer;
   }
 }

@@ -3,10 +3,9 @@ import { IngestionService } from './ingestion.service';
 import { IngestionController } from './ingestion.controller';
 import { FfmpegModule } from '../ffmpeg/ffmpeg.module';
 import { OpenaiModule } from '../openai/openai.module';
-import { ElevenlabsModule } from '../elevenlabs/elevenlabs.module';
 
 @Module({
-  imports: [FfmpegModule, OpenaiModule, ElevenlabsModule],
+  imports: [FfmpegModule, OpenaiModule],
   controllers: [IngestionController],
   providers: [IngestionService],
 })

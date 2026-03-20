@@ -2,6 +2,7 @@ import {
   Controller,
   HttpException,
   HttpStatus,
+  Logger,
   Post,
   Res,
   UploadedFile,
@@ -13,6 +14,8 @@ import { IngestionService } from './ingestion.service';
 
 @Controller('ingestion')
 export class IngestionController {
+  private readonly logger = new Logger(IngestionController.name);
+
   constructor(private readonly ingestionService: IngestionService) {}
 
   @Post('dublar')
@@ -45,6 +48,8 @@ export class IngestionController {
       res.send(videoFinal);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      const stack = err instanceof Error ? err.stack : undefined;
+      this.logger.error(`Pipeline falhou: ${message}`, stack);
       throw new HttpException(
         `Erro no pipeline de dublagem: ${message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,

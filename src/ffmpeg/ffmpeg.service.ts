@@ -4,7 +4,6 @@ import { PassThrough } from 'stream';
 import { writeFile, readFile, rm, mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { SegmentoComAudio } from '../shared/types';
 
 @Injectable()
 export class FfmpegService {
@@ -19,6 +18,7 @@ export class FfmpegService {
   }
 
   async extrairAudio(videoBuffer: Buffer): Promise<Buffer> {
+    this.logger.log(`Extraindo áudio de vídeo com ${videoBuffer.length} bytes`);
     const dir = await this.criarTempDir();
     const tempVideo = join(dir, 'input.mp4');
     await writeFile(tempVideo, videoBuffer);
@@ -43,57 +43,35 @@ export class FfmpegService {
     }
   }
 
-  async montarTrilhaSincronizada(
-    videoBuffer: Buffer,
-    segmentos: SegmentoComAudio[],
-  ): Promise<Buffer> {
+  async substituirAudio(videoBuffer: Buffer, novoAudioBuffer: Buffer): Promise<Buffer> {
+    this.logger.log(`Substituindo áudio: vídeo=${videoBuffer.length} bytes, áudio=${novoAudioBuffer.length} bytes`);
     const dir = await this.criarTempDir();
     const tempVideo = join(dir, 'input.mp4');
+    const tempAudio = join(dir, 'audio.mp3');
     const tempSaida = join(dir, 'output.mp4');
     await writeFile(tempVideo, videoBuffer);
-
-    // Salva cada segmento de áudio como arquivo
-    const segPaths: string[] = [];
-    for (let i = 0; i < segmentos.length; i++) {
-      const path = join(dir, `seg_${i}.mp3`);
-      await writeFile(path, segmentos[i].audio);
-      segPaths.push(path);
-    }
+    await writeFile(tempAudio, novoAudioBuffer);
 
     try {
-      // Monta o filtro complexo:
-      // Cada segmento é atrasado (adelay) pro timestamp correto
-      // Depois todos são mixados numa trilha só
-      const inputs: string[] = [];
-      const filterParts: string[] = [];
-
-      segPaths.forEach((_, i) => {
-        const delayMs = Math.round(segmentos[i].start * 1000);
-        inputs.push('-i', segPaths[i]);
-        filterParts.push(`[${i + 1}:a]adelay=${delayMs}|${delayMs}[a${i}]`);
-      });
-
-      const mixInputs = segmentos.map((_, i) => `[a${i}]`).join('');
-      const filterComplex = [
-        ...filterParts,
-        `${mixInputs}amix=inputs=${segmentos.length}:normalize=0[aout]`,
-      ].join(';');
-
       await new Promise<void>((resolve, reject) => {
-        const cmd = ffmpeg(tempVideo);
-
-        segPaths.forEach((p) => cmd.addInput(p));
-
-        cmd
-          .complexFilter(filterComplex, 'aout')
-          .outputOptions(['-map', '0:v', '-c:v', 'copy', '-y'])
+        ffmpeg(tempVideo)
+          .addInput(tempAudio)
+          .outputOptions(['-map 0:v', '-map 1:a', '-c:v copy', '-shortest', '-y'])
           .output(tempSaida)
-          .on('end', () => resolve())
-          .on('error', (err: Error) => reject(err))
+          .on('error', (err: Error) => {
+            this.logger.error(`FFmpeg erro: ${err.message}`);
+            reject(err);
+          })
+          .on('end', () => {
+            this.logger.log('FFmpeg merge concluído');
+            resolve();
+          })
           .run();
       });
 
-      return await readFile(tempSaida);
+      const resultado = await readFile(tempSaida);
+      this.logger.log(`Vídeo final: ${resultado.length} bytes`);
+      return resultado;
     } finally {
       await this.limparDir(dir);
     }
