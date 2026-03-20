@@ -6,7 +6,9 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  back:
     dependencies:
       '@elevenlabs/elevenlabs-js':
         specifier: ^2.39.0

@@ -1,0 +1,11 @@
+{
+  "name": "dubla-monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "dev:back": "pnpm --filter dubla run dev",
+    "dev:front": "pnpm --filter dubla-front run dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint"
+  }
+}
