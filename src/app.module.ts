@@ -2,10 +2,19 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FfmpegModule } from './ffmpeg/ffmpeg.module';
-import { FfmpegModule } from './ffmpeg/ffmpeg.module';
+import { ElevenlabsModule } from './elevenlabs/elevenlabs.module';
+import { OpenaiModule } from './openai/openai.module';
+import { ConfigModule } from '@nestjs/config';
+
 
 @Module({
-  imports: [FfmpegModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true, // disponível em todos os módulos sem reimportar
+    }),
+    FfmpegModule, 
+    OpenaiModule, 
+    ElevenlabsModule],
   controllers: [AppController],
   providers: [AppService],
 })
