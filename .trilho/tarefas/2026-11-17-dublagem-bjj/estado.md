@@ -6,7 +6,7 @@
 
 ## Onde paramos
 
-Fase 1 fechada. Fase 2: T5 (tradutor) e T6 (juiz + vai-e-volta) feitas; T7 (relatório) é a próxima.
+Fase 1 fechada. Fase 2: T5, T6 e T7 feitas. Falta o fim de fase: suíte, rodada real de tradução + juiz no vídeo 1, code review.
 
 ## Tarefas
 
@@ -17,7 +17,7 @@ Fase 1 fechada. Fase 2: T5 (tradutor) e T6 (juiz + vai-e-volta) feitas; T7 (rela
 - T4 — feito (`back/src/transcricao/`; 10 testes; rodada real fica para a fase 3)
 - T5 — feito (`back/src/traducao/traducao.service.ts`; 5 testes)
 - T6 — feito (`juiz.service.ts`, `revisar-com-juiz.ts`, `TraducaoService.refazer`; 7 testes novos)
-- T7 — pendente
+- T7 — feito (`back/src/relatorio/relatorio.ts`; 3 testes)
 - T8 — pendente
 - T9 — pendente
 - T10 — pendente
@@ -28,7 +28,7 @@ Fase 1 fechada. Fase 2: T5 (tradutor) e T6 (juiz + vai-e-volta) feitas; T7 (rela
 
 ## Próximo passo
 
-T7 (relatório): função pura que monta o relatório a partir das falas (`FalaRevisada` + dados de encaixe, que só existem na fase 3 — definir o tipo de encaixe opcional agora) e grava em `relatorios/<data>-<nome>.json` + tabela no log. Depois: fim da fase 2 (suíte, review, rodada real só de tradução + juiz no vídeo 1 com o "pode" do dev, < US$0,50).
+Fim da fase 2: suíte/lint/typecheck, script da rodada real (transcrever + traduzir + juiz + relatório no vídeo 1; pede o "pode"), code review da fase (base `6138682`), handoff.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -70,6 +70,7 @@ T7 (relatório): função pura que monta o relatório a partir das falas (`FalaR
 - `pnpm` global é 11.9 e o projeto usa 10.32.1: `npx -y pnpm@10.32.1 ...`.
 - T5: `@anthropic-ai/sdk` 1.9.0 + `zod` 4.6.7. Chamada via `client.beta.messages.stream` (o beta é exigido por `fallbacks: 'default'`) com `output_config: { effort: 'high', format: betaZodOutputFormat(schema) }`, `max_tokens` 64000; `stop_reason` diferente de `end_turn` ou `parsed_output` nulo é erro explícito. Entrada ao modelo: JSON com `id`, `pessoa`, `duracaoSegundos`, `alvoCaracteres` (duração × 14), `textoEn`. Tipo `FalaTraduzida` em `shared/types.ts`. `TraducaoModule` ainda não importado (entra na T11).
 - T6: chamada ao Claude extraída para `traducao/claude.ts` (`chamarClaude`), usada por tradutor e juiz. `refazer` manda só as reprovadas (com `textoPtReprovado` e `motivoDoJuiz`), sem o resto do vídeo. Juiz reavalia só as refeitas. "Melhor versão" da spec = última versão (o juiz é binário, não ranqueia). Tipo `FalaRevisada` (`juiz`, `tentativas`, `motivoJuiz`) em `shared/types.ts`; `JuizService` no `TraducaoModule`.
+- T7: `montarRelatorio` (puro), `linhaDaFala` (linha do log no formato do exemplo da spec R10) e `gravarRelatorio(relatorio, pasta, data)` em `back/src/relatorio/relatorio.ts`. Tipo `EncaixeDaFala` criado em `shared/types.ts` antes da T9 (campos opcionais no relatório; a T9 produz). Fala sem encaixe conta em `semDados`; `maiorDesvioInicio` é `null` sem dados.
 
 ## Resultado
 

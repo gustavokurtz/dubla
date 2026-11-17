@@ -29,3 +29,12 @@ export interface FalaRevisada extends FalaTraduzida {
   tentativas: number;
   motivoJuiz?: string; // último motivo de reprovação, quando reprovada
 }
+
+// Como a fala dublada coube no tempo (R1, R2). Preenchido na fase de encaixe.
+export interface EncaixeDaFala {
+  acao: 'ok' | 'encurtar' | 'acelerar' | 'avancar' | 'cortar';
+  atempo: number; // 1 = velocidade normal
+  inicioDublado: number; // em segundos
+  fimDublado: number;
+  encurtamentos: number; // quantas vezes o tradutor encurtou
+}
