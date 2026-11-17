@@ -6,12 +6,12 @@
 
 ## Onde paramos
 
-Planejamento feito: spec, plano e estado commitados na branch `feat/observabilidade-custos`.
+T1 feita: `back/src/custos/` (preços + funções puras de custo) com teste.
 
 ## Tarefas
 
-- T1 — pendente
-- T2 — pendente
+- T1 — feito (`custo.spec.ts` verde, 8 testes)
+- T2 — em andamento
 - T3 — pendente
 - T4 — pendente
 - T5 — pendente
@@ -30,7 +30,7 @@ Planejamento feito: spec, plano e estado commitados na branch `feat/observabilid
 
 ## Próximo passo
 
-T1: ler `referencias/execucao.md` do trilho, buscar a página de preços da AssemblyAI (transcrição e TTS) e escrever `custo.spec.ts` antes de `back/src/custos/`.
+T2: `back/src/trace/` com AsyncLocalStorage; `chamarClaude`, `TranscricaoService` e `VozService` registram no trace.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -51,7 +51,8 @@ T1: ler `referencias/execucao.md` do trilho, buscar a página de preços da Asse
 
 ## Decisões da execução
 
-- nenhuma
+- T1: preço da AssemblyAI (assemblyai.com/pricing, 2026-11-17): transcrição $0,28/h = STT-3.7 $0,21 + speaker labels $0,02 + keyterms $0,05; voz $15/milhão de caracteres. Assume o modelo padrão (STT-3.7), pois o código não fixa `speech_model`: conferir `speech_model` na resposta da rodada real. Usuário ainda não confirmou os preços.
+- T1: tabela da Claude inclui `claude-sonnet-5` (alvo do fallback do Sonnet 5.5); leitura de cache dele estimada em 0,1× (não documentada na skill). Haiku 5.5 escolhe a tabela pelo prompt total (entrada + cache), > 100 mil = tabela longa. Escrita de cache cobrada como TTL 5 min (o dubla não usa cache hoje).
 
 ## Resultado
 
