@@ -2,25 +2,16 @@
 
 **Atualizado em:** 2026-11-17
 **Etapa:** execucao
-**Último review:** a4842cd (fase 1) — sem achados ≥ 80
+**Último review:** 0711d0d (fase 2) — sem achados ≥ 80
 
 ## Onde paramos
 
-Fase 1 fechada (T1–T5, review feito): custo medido por chamada (`back/src/custos/`), trace por job (`back/src/trace/trace.ts`: `Trace`, `rodarNoTrace`, `traceAtual`), tradutor Sonnet 5.5 high + juiz Haiku 5.5 medium (`POR_PAPEL` em `back/src/traducao/claude.ts`), validado contra o Opus no arm bar: US$ 0,11 de Claude por vídeo. Nada roda ainda dentro de um `Trace` na pipeline real: quem abre o trace e as etapas é a fase 2 (T6/T7).
+Fases 1 e 2 fechadas. A fase 1 entregou o custo medido por chamada e a troca de modelo: tradutor Sonnet 5.5 high e juiz Haiku 5.5 medium, US$ 0,11 de Claude por vídeo. A fase 2 entregou os jobs em fila na memória (`back/src/jobs/`), as rotas `POST /jobs`, `GET /jobs/:id`, `GET /jobs/:id/eventos` (SSE) e `GET /jobs/:id/video`, e a tela com progresso real. O dev viu o ensaio sem custo andar na tela e baixou o vídeo. Ainda não há banco: reiniciar o back apaga os jobs (o MP4 continua em `dublados/`).
 
 ## Tarefas
 
-- T1 — feito (`custo.spec.ts` verde, 8 testes)
-- T2 — feito (`trace.spec.ts`, `claude.spec.ts` + specs de tradução/juiz/transcrição/voz; suíte 91 verde)
-- T3 — feito (specs de tradução e juiz conferem modelo/esforço/fallback; suíte 93 verde)
-- T4 — feito (`--simulado` no relatório do arm bar: 72 falas, refazer exercitado, tabela de custo gerada)
-- T5 — feito (rodada 2: meta atingida; `relatorios/comparacao-2026-11-17-20-43.md`)
-- T6 — feito (`jobs.service.spec.ts`, 3 testes; suíte 96 verde)
-- T7 — feito (specs de ingestão, voz e encaixe; suíte 100 verde)
-- T8 — feito (`jobs.controller.spec.ts`; suíte 106 verde; back de pé: 404 em job inexistente nas 3 rotas, inclusive SSE, 400 sem vídeo, `/ingestion/dublar` some)
-- T9 — feito (`pnpm build` verde; prova visual na T10)
-- T10 — feito (o dev viu a tela andar junto com o log e baixou o vídeo, 2026-11-17)
-- T11 — pendente
+- T1–T10 — feito (suíte 106 verde, lint, typecheck e `pnpm build` verdes em 0711d0d)
+- T11 — pendente (quem roda: dev)
 - T12 — pendente
 - T13 — pendente
 - T14 — pendente
@@ -30,13 +21,14 @@ Fase 1 fechada (T1–T5, review feito): custo medido por chamada (`back/src/cust
 
 ## Próximo passo
 
-Ler o resultado da T10 (o dev assiste o ensaio pela tela). Com ela feita: fim da fase 2 (suíte, lint, typecheck, `pnpm build`, code review de a4842cd..HEAD — último review — e handoff).
+Fase 3, T11: tentar `docker compose version` uma vez. Se falhar (em 2026-11-17 o `docker` não existia no WSL), marcar a T11 `esperando o dev: ativar Docker Desktop → Settings → Resources → WSL integration para esta distro e colar a saída de docker compose version` e commitar. Enquanto espera, adiantar o que não depende do Docker na T12: `docker-compose.yml` e o esquema Prisma. Antes, consultar o context7 sobre Prisma, porque a config mudou nas versões recentes. Migration só contra `localhost:5433`, e só depois de conferir a `DATABASE_URL`.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
 - Acha a Claude cara ("2 dólares em 2 vídeos"); não quer usar OpenAI.
-- Autorizou as duas rodadas pagas da T5 nesta sessão (autorização não vale para rodadas futuras).
 - Decidido: os preços da AssemblyAI ficam os da página oficial (T1). Ele não vai conferir nada no painel da AssemblyAI; não pedir confirmação nem conferência deles.
+- Rodada paga só com o "pode" dele na sessão. As autorizações da T5 não valem mais.
+- Ele esperava ver dados no Docker e as telas de trace já na fase 2. Foi explicado que isso é da fase 3 (T12/T13 e T15). Na fase 3, deixar claro quando cada coisa passa a aparecer.
 
 ## Defeitos
 
@@ -44,20 +36,13 @@ Ler o resultado da T10 (o dev assiste o ensaio pela tela). Com ela feita: fim da
 
 ## Aprendizados
 
-- Nos 3 relatórios de 2026-11-17 o encurtar rodou 0 vezes e o juiz reprovou no máximo 1 fala por vídeo: o custo vem de 2 chamadas grandes por vídeo (tradução + juiz) em Opus 5.5 effort high.
-- O `Trace` emite eventos `etapa` / `progresso` / `chamada` (`assinar` devolve a função de cancelar): é o que o SSE da T8 vai repassar. `iniciarEtapa(nome, total?)` fecha a anterior; `avancar()` soma 1 em `feito`.
-- Script de comparação: `cd back && node --env-file=../.env -r ts-node/register scripts/comparar-modelos.ts <relatorio.json> [--simulado]`; os `.md` de `relatorios/` não vão para o git.
-- `docker` não está disponível no WSL (precisa da integração do Docker Desktop) — T11.
-
-## Rodadas da T5
-
-- **Rodada 1** (2026-11-17, `relatorios/comparacao-2026-11-17-20-31.md`): Sonnet 5.5 medium + Haiku 5.5 medium. Custo medido US$ 0,088 (tradução 0,068; juiz 0,0035; 2 refazer 0,015). Termos e sentido: nenhum erro (o juiz reprovou 2, ambas corrigidas). Pior que o Opus: 16 falas passam de 115% do alvo de caracteres onde o Opus ficava dentro (ex.: #15 53/29, #35 35/24, #19 64/46), muito pela troca de "centro" por "linha central"; e #42 "Deixei o cotovelo dele bem claro" soa errado (Opus: "Coloquei o cotovelo dele claramente"). Meta (≤ 5 piores) não atingida.
-- Hipótese para a rodada 2: o prompt já pede "nunca muito acima do alvo"; o Opus em effort high obedecia, o Sonnet em medium checa menos o tamanho. Teste: plano B 1, tradutor em effort high.
-- **Rodada 2** (2026-11-17, `relatorios/comparacao-2026-11-17-20-43.md`): tradutor Sonnet 5.5 high + juiz Haiku 5.5 medium. Custo US$ 0,111 (tradução 9.108 entrada / 8.939 saída = 0,108; juiz 0,003; nenhuma refeita). 0 erros de termo ou sentido; 4 falas acima de 115% do alvo onde o Opus cabia (#15 35/29, #27 37/29, #41 29/25, #72 18/15, poucos caracteres); #42 "bem claramente" tão estranha quanto a do Opus. Meta atingida → adotado effort high no tradutor. Hipótese da rodada 1 confirmada.
-- Referência de custo do Opus: com os mesmos tokens da rodada 2 daria ~US$ 0,34 (Opus high gera mais saída); a fatura do usuário dizia ~US$ 1 por vídeo.
-
-- T10 (eu, por `curl`, 2026-11-17): servidor do ensaio + arm bar → SSE com 460 eventos: 7 etapas na ordem, vozes e encaixe 0→72/72, `pronto`, `GET /video` 200 com 14,6 MB e nome `BJJ-Moves-Arm-Bar-From-Guard-by-John-Danaher-dublado.mp4`. Custo 0 (tudo simulado). Falta o dev ver a tela.
-- `pgrep -f <padrão>` também casa com o shell do Bash quando o texto do comando contém o nome do processo (ex.: um heredoc que cita `servidor-ensaio`): matar o processo num comando separado.
+- O `Trace` (`back/src/trace/trace.ts`) emite os eventos `etapa`, `progresso` e `chamada`, e o SSE repassa o estado inteiro do job a cada um. A T13 persiste a partir dessas mesmas assinaturas: `trace.assinar` e `jobs.assinar`. O segundo avisa cada mudança de situação de qualquer job.
+- O estado que a tela e o SSE usam é montado em `JobsController.estado` (`back/src/jobs/jobs.controller.ts`). O `GET /jobs/:id` da T14 tem que manter esse formato, porque o front (`EstadoJob` em `front/src/App.tsx`) depende dele.
+- Ensaio sem custo pela tela: `cd back && node --env-file=../.env -r ts-node/register scripts/servidor-ensaio.ts b9ead036-b0c7-4bb4-92a3-0d8795ee0381 ../relatorios/2026-11-17-bjj-moves-arm-bar-from-guard-by-john-danaher.json` + `pnpm dev:front`. Na tela, mandar `videos/BJJ-Moves-Arm-Bar-From-Guard-by-John-Danaher.mp4`; link não serve. A voz simulada é um tom de 300 Hz (o "chiado"), e o custo fica em 0.
+- Script de comparação: `cd back && node --env-file=../.env -r ts-node/register scripts/comparar-modelos.ts <relatorio.json> [--simulado]`. Os `.md` de `relatorios/` não vão para o git.
+- O `pgrep -f <padrão>` também casa com o shell do Bash quando o texto do comando contém o nome do processo (ex.: um heredoc que cita `servidor-ensaio`). Matar o processo num comando separado.
+- T5: o Opus, com os mesmos tokens, custaria ~US$ 0,34 por vídeo; a fatura do usuário dizia ~US$ 1. O Sonnet medium estourava o alvo de caracteres em 16 falas, e em effort high só 4: por isso o tradutor ficou em high (`relatorios/comparacao-2026-11-17-20-43.md`).
+- Ponto em aberto abaixo de 80 no review: se um ouvinte do `JobsService.avisar()` lançar erro, o `rodando` fica `true` e a fila para. Hoje nenhum lança; na T13, o ouvinte que grava no banco não pode lançar (tratar o erro dentro dele).
 
 ## Hipóteses descartadas
 
@@ -65,17 +50,13 @@ Ler o resultado da T10 (o dev assiste o ensaio pela tela). Com ela feita: fim da
 
 ## Decisões da execução
 
-- T1: preço da AssemblyAI (assemblyai.com/pricing, 2026-11-17): transcrição $0,28/h = STT-3.7 $0,21 + speaker labels $0,02 + keyterms $0,05; voz $15/milhão de caracteres. Assume o modelo padrão (STT-3.7), pois o código não fixa `speech_model`: conferir `speech_model` na resposta da rodada real.
-- T1: tabela da Claude inclui `claude-sonnet-5` (alvo do fallback do Sonnet 5.5); leitura de cache dele estimada em 0,1× (não documentada na skill). Haiku 5.5 escolhe a tabela pelo prompt total (entrada + cache), > 100 mil = tabela longa. Escrita de cache cobrada como TTL 5 min (o dubla não usa cache hoje).
-- T2: `chamarClaude` ganhou um objeto de opções `{ papel }` (a T3 acrescenta modelo e esforço nele). A chamada é registrada no trace antes de checar recusa/corte, porque foi cobrada. Transcrição concluída sem `audio_duration` é erro explícito (o SDK tipa como opcional). Vozes somadas numa linha por etapa (`Trace.somarVoz`); caracteres = `texto.length`.
-- T2: custo usa `resposta.model` (o modelo que de fato respondeu). Se um fallback server-side cair em modelo sem preço, a chamada falha com erro explícito; o custo da parte recusada antes do fallback (`usage.iterations`) não é separado.
-- T3: modelo/esforço/fallback ficam numa tabela por papel dentro de `claude.ts` (`POR_PAPEL`), e não passados por cada serviço como o plano dizia: um lugar só para trocar modelo, e os serviços continuam passando só o papel. Teste antigo que conferia Opus/high foi atualizado para a regra nova (R2).
-- T6: `JobsService` (`back/src/jobs/`) guarda os jobs num `Map` e a fila num array; `posicao` = quantos vídeos estão antes (0 = dublando ou o próximo). Job de link usa a URL como nome (o título só aparece depois do download). A pasta `dublados/` entra por injeção (`PASTA_DUBLADOS`) para o teste usar um `mkdtemp`. Ainda sem aviso de mudança de situação do job: o SSE da T8 decide o que precisa.
-- T7: dublagem por link tem uma etapa a mais antes das 7, "Baixando o vídeo" (o download leva tempo e sem etapa a tela ficaria parada); a T9 mostra essa etapa sem contar no "n de 7". O log do servidor continua com uma linha por etapa (`IngestionService.etapa`). O encaixe (função pura) avança o trace por `traceAtual()`, como os services.
-- T8: o SSE manda o estado inteiro do job (o mesmo do `GET /jobs/:id`: situação, posição, etapas com custo, chamadas, custo total) a cada evento do trace ou mudança de situação de qualquer job, e completa no `pronto`/`falhou`. Tempo decorrido a tela calcula de `iniciadoEm`. Nome do arquivo baixado: `<nome>-dublado.mp4`; job de link ainda usa a URL como nome (ponto em aberto: guardar o título do YouTube no job).
-- T9: mantido o visual do card (Crisp Glass); só o estado de processamento mudou. Barra real (feito/total) nas vozes e no encaixe, animada nas outras etapas. Download por `<a href=/api/jobs/:id/video download>`. Se o SSE fecha sem o job (back reiniciado), a tela mostra erro em vez de ficar parada.
-- T10: os simulados do ensaio foram para `back/scripts/servicos-simulados.ts`, usados pelo `ensaio-sem-custo.ts` e pelo novo `servidor-ensaio.ts` (sobe o `AppModule` com `Test.createTestingModule().overrideProvider`). Na voz só o `sintetizar` é simulado, então a atribuição de vozes e a contagem de falas são as reais (antes o ensaio simulava o `gerarAudios` inteiro).
-- T4: a comparação vai para `relatorios/comparacao-<AAAA-MM-DD-HH-MM>[-simulado].md` (com hora, para a segunda rodada não sobrescrever a primeira).
+- T1: preço da AssemblyAI (assemblyai.com/pricing, 2026-11-17): transcrição $0,28/h e voz $15 por milhão de caracteres. Assume o STT-3.7 padrão; conferir `speech_model` na resposta da rodada real (T16).
+- T2/T3: modelo, esforço e fallback por papel ficam em `POR_PAPEL` (`back/src/traducao/claude.ts`). O custo usa `resposta.model`. Um modelo sem preço gera erro explícito.
+- T6: jobs num `Map` e a fila num array. `posicao` é quantos vídeos estão antes (0 = dublando agora ou o próximo). A pasta `dublados/` vem injetada por `PASTA_DUBLADOS`.
+- T7: dublagem por link ganha uma etapa extra antes das 7, "Baixando o vídeo", que não conta no "n de 7".
+- T8: a rota síncrona `POST /ingestion/dublar` e o `IngestionController` foram removidos. Job de link usa a URL como nome, então o arquivo baixado sai com nome feio. Ponto em aberto: guardar o título do YouTube no job (dá para fazer na T13, quando o job ganha nome no banco).
+- T9: o card mantém o visual Crisp Glass. A barra é real nas vozes e no encaixe e animada nas outras etapas. Se o SSE fechar sem o job (back reiniciado), a tela mostra erro.
+- T10: os simulados ficam em `back/scripts/servicos-simulados.ts`, usados por `ensaio-sem-custo.ts` e `servidor-ensaio.ts` (`Test.createTestingModule().overrideProvider`). Na voz, só o `sintetizar` é simulado.
 
 ## Resultado
 
