@@ -28,7 +28,7 @@ Voz mudou para clone por API de outro provedor (spec R7/R9) e entrou o download 
 
 ## Próximo passo
 
-T1: pedir ao dev o link de 1 vídeo do YouTube (3–5 min, uma pessoa) e baixar com `cd back && npx ts-node scripts/baixar-video.ts <link>`; confirmar na doc oficial Cartesia/Fish Audio/Inworld (clone por API, PT-BR, preço); escrever `back/scripts/sondagem-clone.mts`; rodar só com o "pode" e as chaves dos 2 provedores no `.env`.
+T1: pedir ao dev o link de 1 vídeo do YouTube (3–5 min, uma pessoa) e baixar com `cd back && npx ts-node scripts/baixar-video.ts <link>`; confirmar na doc oficial Cartesia/Fish Audio/Inworld (clone por API, PT-BR, preço); escrever `back/scripts/sondagem-clone.mts`; rodar só com o "pode" e as chaves dos 2 provedores no `.env`. Provedores escolhidos para a sondagem: Fish Audio (`FISH_API_KEY`) e Inworld (`INWORLD_API_KEY`); Cartesia de reserva.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -51,6 +51,12 @@ T1: pedir ao dev o link de 1 vídeo do YouTube (3–5 min, uma pessoa) e baixar 
 - Sondagem T1 rodada 1 (2026-11-17, com o "pode"): 10 mp3 gerados, 838 caracteres (~US$0,013), 5,4–7,7 s por fala; Nelson ~5% mais lento que Benício nas mesmas falas.
 - Usuário (2026-11-17), depois de escolher "só vozes prontas": "acho q clonar a voz vai ser melhor ... nao tem como mesmo o assembly ai fzr isso?". Decisão do R7 reaberta.
 - decidido (2026-11-17): voz por clone via API de outro provedor ("Sondar clone de outro provedor"); download do YouTube no app e em script ("os dois"); teste real com 1 vídeo de uma pessoa, duas pessoas por testes automáticos. Spec R7, R9, R11 e R12 (nova) e plano (T0, T1, T2, T8, T12, T13) ajustados.
+
+- Pesquisa T1 (docs oficiais, 2026-11-17), clone por API:
+  - **Fish Audio**: criar `POST https://api.fish.audio/model` (multipart: `type=tts`, `title`, `train_mode=fast`, `voices`, `texts?`, `visibility=private`) → `_id`; apagar `DELETE /model/{id}`; ou clone inline sem salvar (`references` em msgpack no `/v1/tts`). TTS `POST https://api.fish.audio/v1/tts`, header `model: s2.1-pro`, `reference_id`, `format: mp3`, `prosody.speed` 0.5–2.0, `language: pt-BR`. PT no Tier 2. US$15/1M bytes UTF-8 (~US$16–17/1M chars PT), sem mensalidade. Auth Bearer.
+  - **Inworld**: criar `POST https://api.inworld.ai/voices/v1/voices:clone` (JSON, `voiceSamples[{audioData base64, transcription?}]`, `languageCode`, `audioProcessingConfig.removeBackgroundNoise`; 10–30 s) → `voice.voiceId`; apagar `DELETE /voices/v1/voices/{voiceId}`. TTS `POST https://api.inworld.ai/tts/v1/voice` (`text` ≤ 2000, `modelId: inworld-tts-2`, `language: pt-BR`, `audioConfig.speakingRate` 0.5–1.5, resposta base64). PT-BR Tier 1. US$25/1M (On-Demand; Flash US$15/1M). Auth `Basic $INWORLD_API_KEY`. Limite 100 vozes custom.
+  - **Cartesia** (reserva): `POST /voices/clone`, `sonic-3.6`, `speed` 0.6–1.5, clone EN mantém sotaque sem `PATCH /voices/{id}/accents brazilian-portuguese`; US$37–65/1M e IVC só em plano pago.
+  - Os três têm controle de velocidade nativo (a AssemblyAI não tinha): pode substituir o `atempo` do ffmpeg em T9; decidir depois da escolha do provedor.
 
 ## Hipóteses descartadas
 
