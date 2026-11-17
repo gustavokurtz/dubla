@@ -1,7 +1,7 @@
 import { EncaixeDaFala, FalaRevisada } from '../shared/types';
 import { FalaNoRelatorio } from '../relatorio/relatorio';
 import { AudioDaFala } from '../voz/voz.service';
-import { MAXIMO_DE_ENCURTAMENTOS, planejarEncaixe } from './planejar-encaixe';
+import { ATEMPO_MAXIMO, MAXIMO_DE_ENCURTAMENTOS, planejarEncaixe } from './planejar-encaixe';
 
 // Menos que isso não é uma palavra em português: não adianta pedir para encurtar.
 const ALVO_MINIMO = 5;
@@ -33,7 +33,9 @@ export async function encaixarFalas(
     const gerado = audioPorId.get(original.id);
     if (!gerado) throw new Error(`Fala ${original.id} sem áudio dublado`);
     const limite = falas[i + 1]?.inicio ?? fimDoVideo;
-    const espaco = Math.min(original.fim, limite) - original.inicio;
+    // Só se encurta quando nem acelerar 15% e avançar até o limite bastam (R2): o
+    // espaço que a fala encurtada tem é o silêncio até o limite, com a aceleração.
+    const espacoUtil = (limite - original.inicio) * ATEMPO_MAXIMO;
     let fala = original;
     let audio = gerado.audio;
     let encurtamentos = 0;
@@ -51,7 +53,7 @@ export async function encaixarFalas(
         resultado.push({ fala: { ...fala, encaixe }, audio });
         break;
       }
-      const alvo = Math.floor((fala.textoPt.length * espaco) / duracaoAudio);
+      const alvo = Math.floor((fala.textoPt.length * espacoUtil) / duracaoAudio);
       if (alvo < ALVO_MINIMO) {
         // Não cabe nem uma palavra: pedir ao Claude devolve vazio (D2). Corta no limite,
         // guardando quantas vezes a fala foi de fato encurtada.
@@ -65,7 +67,7 @@ export async function encaixarFalas(
         resultado.push({ fala: { ...fala, encaixe: { ...corte, encurtamentos } }, audio });
         break;
       }
-      const motivo = `o áudio dublado tem ${duracaoAudio.toFixed(1)} s e o espaço é de ${espaco.toFixed(1)} s`;
+      const motivo = `o áudio dublado tem ${duracaoAudio.toFixed(1)} s e o espaço é de ${espacoUtil.toFixed(1)} s`;
       const textoPt = await deps.encurtar(fala, alvo, motivo);
       fala = { ...fala, textoPt };
       audio = await deps.sintetizar(fala.id, textoPt, gerado.voz);

@@ -2,7 +2,7 @@
 
 **Atualizado em:** 2026-11-17 02:05
 **Etapa:** execucao
-**Último review:** 8bccc56 (fase 3, T8–T11, T13) — sem achados ≥ 80. Review das correções pós-fase (`8d52c38..HEAD`) lançado no fim da sessão; resultado vai no chat/commit seguinte.
+**Último review:** 326c26e (fase 3 + correções pós-fase, `8d52c38..HEAD`) — 1 achado (82), corrigido
 
 ## Onde paramos
 
@@ -44,7 +44,8 @@ T12 rodada 1 (`Quem roda: dev`): pedir ao dev que assista `videos/Arm-Bar-Danahe
 
 ## Aprendizados
 
-- Suíte: 19 suítes, 69 testes verdes; lint do back e do front limpo; typecheck limpo (depois de `a1c7de6`/`ae35477`).
+- Review pós-fase 3: alvo do encurtar ainda usava o espaço da ordem antiga (`min(fim, limite) − inicio`); com a R2 nova o espaço útil é `(limite − inicio) × 1,15`. Corrigido em `encaixe/encaixar-falas.ts` com teste.
+- Suíte: 19 suítes, 70 testes verdes; lint do back e do front limpo; typecheck limpo (depois de `a1c7de6`/`ae35477`).
 - 3ª rodada real (2026-11-17): 224 s ponta a ponta; 72 falas; tradução 9.108/8.532 tokens, juiz 11.344/3.037, 1 refazer + reavaliação (~6k/~0,35k), 1 encurtar (2.787/305); esperas do limite de voz 36 s + 1 s. ≈ US$0,35. Total fase 3 (3 rodadas) ≈ US$1,45.
 - Ensaio sem custo: `node --env-file=../.env -r ts-node/register scripts/ensaio-sem-custo.ts <video> <id-transcricao> <relatorio.json>` em `back/` (transcrição salva da AssemblyAI é GET grátis; ids recentes: `b9ead036-b0c7-4bb4-92a3-0d8795ee0381`). Simula voz com 13,2 chars/s da Cássio (medido na sondagem). Previu 0 encurtar; real deu 1.
 - Rodar o back para rodada real: `(timeout 1500 npx ts-node src/main.ts > <scratch>/back.log 2>&1 &)` em `back/`, depois `curl -F 'url=<link>' --max-time 1400 http://localhost:3000/ingestion/dublar -o ../videos/<nome>.mp4`. Link sempre entre aspas (zsh expande `?`). Parar com `kill $(pgrep -f "ts-nod[e] src/main")` — `pkill -f` mata o próprio shell.

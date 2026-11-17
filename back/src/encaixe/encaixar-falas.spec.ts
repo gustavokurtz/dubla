@@ -54,8 +54,8 @@ describe('encaixarFalas', () => {
       { medir, encurtar, sintetizar },
     );
 
-    // alvo = 30 chars × 2 s / 3 s = 20
-    expect(encurtar).toHaveBeenCalledWith(falas[0], 20, expect.stringContaining('3.0 s'));
+    // alvo = 30 chars × (2,1 s × 1,15) / 3 s = 24
+    expect(encurtar).toHaveBeenCalledWith(falas[0], 24, expect.stringContaining('3.0 s'));
     expect(sintetizar).toHaveBeenCalledWith(1, curto, 'v1');
     expect(r[0].fala.textoPt).toBe(curto);
     expect(r[0].fala.encaixe).toMatchObject({ acao: 'ok', encurtamentos: 1 });
@@ -115,5 +115,26 @@ describe('encaixarFalas', () => {
       fimDublado: 0.25,
       encurtamentos: 0,
     });
+  });
+
+  it('alvo de encurtar conta o silêncio seguinte e os 15% de aceleração', async () => {
+    const encurtar = jest.fn((_f: FalaRevisada, alvo: number) => Promise.resolve('x'.repeat(alvo)));
+    const sintetizar = jest.fn((_id: number, texto: string) => Promise.resolve(audioDe(texto)));
+    // Fala de 0,27 s, próxima aos 1,12 s; áudio de 1,5 s (15 chars) não cabe nem acelerado.
+    // Espaço útil = 1,12 × 1,15 = 1,288 s → alvo = 15 × 1,288 / 1,5 = 12 chars.
+    const falas = [fala(1, 0, 0.27, 'x'.repeat(15)), fala(2, 1.12, 3, 'oi')];
+
+    const r = await encaixarFalas(
+      falas,
+      [
+        { id: 1, voz: 'v1', audio: audioDe('x'.repeat(15)) },
+        { id: 2, voz: 'v1', audio: audioDe('oi') },
+      ],
+      10,
+      { medir, encurtar, sintetizar },
+    );
+
+    expect(encurtar).toHaveBeenCalledWith(falas[0], 12, expect.stringContaining('1.3 s'));
+    expect(r[0].fala.encaixe).toMatchObject({ acao: 'avancar', encurtamentos: 1 });
   });
 });
