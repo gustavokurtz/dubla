@@ -16,3 +16,9 @@ export interface Fala {
   fim: number;
   textoEn: string;
 }
+
+// Fala depois da tradução: inglês corrigido (R4) e português para a voz (R5).
+export interface FalaTraduzida extends Fala {
+  textoEnCorrigido: string;
+  textoPt: string;
+}

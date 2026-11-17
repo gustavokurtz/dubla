@@ -6,7 +6,7 @@
 
 ## Onde paramos
 
-Fase 1 fechada: download do YouTube (T0), vozes escolhidas (T1), Demucs local (T2), guia BJJ (T3) e transcrição com corte em falas (T4). Revisão da fase sem achados. Nada da fase 2 começado.
+Fase 1 fechada. Fase 2: T5 (tradutor) feita; T6 (juiz) é a próxima.
 
 ## Tarefas
 
@@ -15,7 +15,7 @@ Fase 1 fechada: download do YouTube (T0), vozes escolhidas (T1), Demucs local (T
 - T2 — feito (`back/src/separacao/`; dev ouviu e aprovou; 14,7 s para 4:45 de vídeo, VRAM máx 2,5 GB)
 - T3 — feito (`back/src/traducao/guia-bjj.ts`, 97 termos + guia do tatame; dev aprovou o guia)
 - T4 — feito (`back/src/transcricao/`; 10 testes; rodada real fica para a fase 3)
-- T5 — pendente
+- T5 — feito (`back/src/traducao/traducao.service.ts`; 5 testes)
 - T6 — pendente
 - T7 — pendente
 - T8 — pendente
@@ -28,7 +28,7 @@ Fase 1 fechada: download do YouTube (T0), vozes escolhidas (T1), Demucs local (T
 
 ## Próximo passo
 
-T5 (tradutor com Claude). Antes de codar, carregar a skill `claude-api` (SDK `@anthropic-ai/sdk`, modelo, `output_config.effort`, saída estruturada com zod, streaming + `finalMessage()`, fallbacks) — o plano fixa as decisões, a skill dá a sintaxe atual. `ANTHROPIC_API_KEY` já está no `.env`. Adicionar dependência com `npx -y pnpm@10.32.1 --filter dubla add <pacote>` (na raiz).
+T6 (juiz e vai-e-volta): `JuizService.avaliar` com rubrica própria e `traducao.refazer(falas, motivos)` no `TraducaoService`, laço de até 2 voltas em código. Reusar o padrão de chamada do `TraducaoService.chamar` (stream + `finalMessage()`, `betaZodOutputFormat`, fallbacks).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -68,6 +68,7 @@ T5 (tradutor com Claude). Antes de codar, carregar a skill `claude-api` (SDK `@a
 - T4: SDK `assemblyai` 4.43.3, `client.transcripts.transcribe({ audio, speaker_labels: true, language_code: 'en', keyterms_prompt })`. Palavra sem `speaker` é erro explícito. Corte em 12 s prefere a última vírgula. Tipo `Fala` em `back/src/shared/types.ts`.
 - Módulos novos (`YoutubeModule`, `SeparacaoModule`, `TranscricaoModule`) ainda não importados no `AppModule`/`IngestionModule`: entram na T11/T13.
 - `pnpm` global é 11.9 e o projeto usa 10.32.1: `npx -y pnpm@10.32.1 ...`.
+- T5: `@anthropic-ai/sdk` 1.9.0 + `zod` 4.6.7. Chamada via `client.beta.messages.stream` (o beta é exigido por `fallbacks: 'default'`) com `output_config: { effort: 'high', format: betaZodOutputFormat(schema) }`, `max_tokens` 64000; `stop_reason` diferente de `end_turn` ou `parsed_output` nulo é erro explícito. Entrada ao modelo: JSON com `id`, `pessoa`, `duracaoSegundos`, `alvoCaracteres` (duração × 14), `textoEn`. Tipo `FalaTraduzida` em `shared/types.ts`. `TraducaoModule` ainda não importado (entra na T11).
 
 ## Resultado
 
