@@ -170,3 +170,28 @@ describe('FfmpegService.montarVideo com cortes mínimos', () => {
     }
   }, 60000);
 });
+
+describe('FfmpegService.apararSilencio', () => {
+  it('tira o silêncio do começo e do fim da voz gerada', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dubla-teste-'));
+    try {
+      // 0,3 s de silêncio + 1 s de tom + 0,5 s de silêncio, como a voz pronta devolve.
+      const comSilencio = gerar(dir, 'voz.mp3', [
+        '-f',
+        'lavfi',
+        '-i',
+        'sine=frequency=440:duration=1',
+        '-af',
+        'adelay=300:all=1,apad=pad_dur=0.5',
+      ]);
+      const service = new FfmpegService();
+
+      const aparado = await service.apararSilencio(comSilencio);
+
+      // 1,8 s → ~1 s: as duas pontas saíram.
+      expect(Math.abs((await service.medirDuracao(aparado)) - 1)).toBeLessThanOrEqual(0.06);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

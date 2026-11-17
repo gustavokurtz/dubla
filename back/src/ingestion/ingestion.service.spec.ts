@@ -40,6 +40,7 @@ describe('IngestionService', () => {
     extrairAudio: jest.fn(registra('extrair', Buffer.from('audio'))),
     medirDuracao: jest.fn((m: Buffer) => Promise.resolve(m.toString() === 'video' ? 10 : 1)),
     montarVideo: jest.fn(registra('montar', Buffer.from('video-dublado'))),
+    apararSilencio: jest.fn((a: Buffer) => Promise.resolve(Buffer.from(`aparado ${a.toString()}`))),
   };
   const separacao = {
     separar: jest.fn(registra('separar', { voz: Buffer.from('v'), fundo: Buffer.from('fundo') })),
@@ -111,8 +112,8 @@ describe('IngestionService', () => {
     expect(video.toString()).toBe('video');
     expect(fundo.toString()).toBe('fundo');
     expect(posicionadas.map((p) => [p.audio.toString(), p.encaixe.inicioDublado])).toEqual([
-      ['fala 1', 1],
-      ['fala 2', 4],
+      ['aparado fala 1', 1],
+      ['aparado fala 2', 4],
     ]);
   });
 

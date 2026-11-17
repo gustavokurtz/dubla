@@ -48,6 +48,7 @@ export class IngestionService {
 
     this.logger.log('5/7 Gerando as vozes');
     const audios = await this.voz.gerarAudios(revisadas);
+    for (const a of audios) a.audio = await this.ffmpeg.apararSilencio(a.audio);
 
     this.logger.log('6/7 Encaixando cada fala no tempo');
     const encaixadas = await encaixarFalas(
@@ -57,7 +58,8 @@ export class IngestionService {
       {
         medir: (a) => this.ffmpeg.medirDuracao(a),
         encurtar: (f, alvo, motivo) => this.traducao.encurtar(f, alvo, motivo),
-        sintetizar: (id, texto, voz) => this.voz.sintetizar(id, texto, voz),
+        sintetizar: async (id, texto, voz) =>
+          this.ffmpeg.apararSilencio(await this.voz.sintetizar(id, texto, voz)),
       },
     );
 

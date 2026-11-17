@@ -112,6 +112,30 @@ export class FfmpegService {
     }
   }
 
+  // Tira o silêncio das pontas da voz gerada: a voz pronta devolve ~0,1–0,25 s antes
+  // e ~0,5 s depois da fala, o que atrasa o início (R1) e infla a duração medida (R2).
+  async apararSilencio(audio: Buffer): Promise<Buffer> {
+    const dir = await this.criarTempDir();
+    const entrada = join(dir, 'entrada.mp3');
+    const saida = join(dir, 'saida.mp3');
+    await writeFile(entrada, audio);
+    const tirarDoComeco = 'silenceremove=start_periods=1:start_threshold=-40dB';
+    try {
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(entrada)
+          .audioFilters([tirarDoComeco, 'areverse', tirarDoComeco, 'areverse'])
+          .audioCodec('libmp3lame')
+          .output(saida)
+          .on('error', (err: Error) => reject(err))
+          .on('end', () => resolve())
+          .run();
+      });
+      return await readFile(saida);
+    } finally {
+      await this.limparDir(dir);
+    }
+  }
+
   // Duração em segundos de um áudio ou vídeo em memória.
   async medirDuracao(midia: Buffer): Promise<number> {
     const dir = await this.criarTempDir();
