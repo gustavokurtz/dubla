@@ -11,8 +11,8 @@ Fases 1 e 2 fechadas. A fase 1 entregou o custo medido por chamada e a troca de 
 ## Tarefas
 
 - T1–T10 — feito (suíte 106 verde, lint, typecheck e `pnpm build` verdes em 0711d0d)
-- T11 — pendente (quem roda: dev)
-- T12 — pendente
+- T11 — feito (docker compose v5.1.4 respondeu no WSL em 2026-11-17; `docker ps` ok)
+- T12 — em andamento
 - T13 — pendente
 - T14 — pendente
 - T15 — pendente
