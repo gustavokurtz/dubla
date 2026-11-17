@@ -14,14 +14,14 @@ Fases 1 e 2 fechadas. A fase 1 entregou o custo medido por chamada e a troca de 
 - T11 — feito (docker compose v5.1.4 respondeu no WSL em 2026-11-17; `docker ps` ok)
 - T12 — feito (migration `inicio` aplicada em localhost:5433; `\dt` mostra Job, Etapa, Chamada)
 - T13 — feito (suíte 112 verde; ensaio contra o Postgres local: dublagem pronta com 7 etapas e 72/72 falas gravadas; back derrubado no meio → `interrompido` com as 2 etapas feitas)
-- T14 — em andamento
+- T14 — feito (suíte 120 verde; ensaio reiniciado: `GET /jobs` lista os 2 do banco com duração e custo, `GET /jobs/<interrompido>` traz as etapas, vídeo do pronto 200 com 14,6 MB, id inexistente 404)
 - T15 — pendente
 - T16 — pendente
 - Entrega — pendente (verificação, push + PR para master)
 
 ## Próximo passo
 
-T14: `GET /jobs` (lista do banco, mais recente primeiro, custo total e duração); `GET /jobs/:id` lê do banco quando o job não está na memória, no mesmo formato de `JobsController.estado`; `GET /jobs/:id/video` pelo caminho gravado (404 se o arquivo sumiu). Specs com repositório simulado.
+T15: telas de histórico e trace no front (skill `frontend-design`, manter o Crisp Glass). Lista: `GET /jobs`; detalhe: `GET /jobs/:id` (mesmo formato do SSE); baixar: `GET /jobs/:id/video`. Situação nova `interrompido`: a etapa aberta (sem `fim`) é onde parou. Para ter dados com custo na tela antes da T16, só o ensaio (custo 0); o primeiro trace com custo real aparece na T16.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -50,6 +50,8 @@ T14: `GET /jobs` (lista do banco, mais recente primeiro, custo total e duração
 
 - T13: `JobsRepositorio` (`back/src/jobs/jobs.repositorio.ts`) grava o retrato inteiro do job (upsert do job + apaga e recria etapas e chamadas, numa transação) a cada aviso. Os avisos passam por uma cadeia de promessas única: enquanto um job já espera na cadeia, os avisos seguintes dele se juntam (ele lê o job na hora de gravar). Erro de gravação vira log e não lança, o que fecha o ponto em aberto do `avisar()`. `onModuleInit` marca `na fila`/`dublando` como `interrompido`. `PrismaService` em `back/src/banco/`. O `Job` em memória ganhou `origem` (`arquivo`/`link`).
 - T13: o gerador do Prisma usa `importFileExtension = ""`: com `.js` nos imports, o Jest e o ts-node dos scripts não achavam os arquivos do cliente gerado.
+
+- T14: o detalhe e o download procuram primeiro na memória (dublagem viva, com posição na fila) e depois no banco (`JobsRepositorio.carregar` remonta um `Job` com o `Trace`, então o formato é o mesmo do SSE). O SSE continua só para jobs da memória. `GET /jobs` devolve `duracaoMs` pronto. Vídeo com arquivo apagado: 404. No `interrompido` não há `etapaDoErro`; a etapa sem `fim` é onde parou.
 
 ## Hipóteses descartadas
 

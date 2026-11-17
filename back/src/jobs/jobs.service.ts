@@ -10,7 +10,8 @@ export const PASTA_DUBLADOS = 'PASTA_DUBLADOS';
 
 export type Entrada = { video: Buffer; nome: string } | { url: string };
 
-export type Situacao = 'na fila' | 'dublando' | 'pronto' | 'falhou';
+// interrompido: só no histórico (o back reiniciou no meio, ver JobsRepositorio).
+export type Situacao = 'na fila' | 'dublando' | 'pronto' | 'falhou' | 'interrompido';
 
 export interface Job {
   id: string;

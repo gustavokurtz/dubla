@@ -228,3 +228,116 @@ describe('JobsRepositorio', () => {
     ]);
   });
 });
+
+describe('JobsRepositorio lê o histórico', () => {
+  const linhaJob = {
+    id: 'a',
+    nome: 'arm bar',
+    origem: 'arquivo',
+    situacao: 'pronto',
+    criadoEm: new Date('2026-11-17T10:00:00Z'),
+    iniciadoEm: new Date('2026-11-17T10:01:00Z'),
+    terminadoEm: new Date('2026-11-17T10:09:30Z'),
+    erro: null,
+    etapaDoErro: null,
+    arquivo: '/dublados/a.mp4',
+    custoTotal: 0.1,
+  };
+
+  function prismaDeLeitura() {
+    const findMany = jest.fn().mockResolvedValue([linhaJob]);
+    const findUnique = jest.fn(({ where }: { where: { id: string } }) =>
+      Promise.resolve(
+        where.id !== 'a'
+          ? null
+          : {
+              ...linhaJob,
+              etapas: [
+                {
+                  jobId: 'a',
+                  ordem: 0,
+                  nome: 'Traduzindo e revisando',
+                  inicio: new Date('2026-11-17T10:02:00Z'),
+                  fim: new Date('2026-11-17T10:03:00Z'),
+                  feito: null,
+                  total: null,
+                  erro: null,
+                  custo: 0.1,
+                },
+              ],
+              chamadas: [
+                {
+                  jobId: 'a',
+                  ordem: 0,
+                  etapa: 0,
+                  servico: 'claude',
+                  papel: 'juiz',
+                  modelo: 'claude-haiku-5-5',
+                  entrada: 2000,
+                  saida: 300,
+                  segundos: null,
+                  caracteres: null,
+                  quantidade: null,
+                  custo: 0.1,
+                  duracaoMs: 5000,
+                },
+              ],
+            },
+      ),
+    );
+    const prisma = { job: { findMany, findUnique } } as unknown as PrismaService;
+    return { prisma, findMany, findUnique };
+  }
+
+  it('lista do mais recente para o mais antigo, com custo total e duração', async () => {
+    const { prisma, findMany } = prismaDeLeitura();
+
+    const lista = await new JobsRepositorio(prisma).listar();
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { criadoEm: 'desc' } }),
+    );
+    expect(lista).toEqual([
+      expect.objectContaining({
+        id: 'a',
+        nome: 'arm bar',
+        situacao: 'pronto',
+        custo: 0.1,
+        duracaoMs: 510_000,
+      }),
+    ]);
+  });
+
+  it('carrega um job antigo com o trace inteiro, sem campos nulos', async () => {
+    const { prisma } = prismaDeLeitura();
+
+    const job = await new JobsRepositorio(prisma).carregar('a');
+
+    expect(job).toMatchObject({ id: 'a', situacao: 'pronto', arquivo: '/dublados/a.mp4' });
+    expect(job!.erro).toBeUndefined();
+    expect(job!.trace.etapas).toEqual([
+      {
+        nome: 'Traduzindo e revisando',
+        inicio: new Date('2026-11-17T10:02:00Z'),
+        fim: new Date('2026-11-17T10:03:00Z'),
+      },
+    ]);
+    expect(job!.trace.chamadas).toEqual([
+      {
+        servico: 'claude',
+        etapa: 0,
+        papel: 'juiz',
+        modelo: 'claude-haiku-5-5',
+        entrada: 2000,
+        saida: 300,
+        custo: 0.1,
+        duracaoMs: 5000,
+      },
+    ]);
+    expect(job!.trace.custoTotal()).toBeCloseTo(0.1);
+  });
+
+  it('job que não está no banco: undefined', async () => {
+    expect(await new JobsRepositorio(prismaDeLeitura().prisma).carregar('x')).toBeUndefined();
+  });
+});
