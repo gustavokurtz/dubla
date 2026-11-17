@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { JuizService } from './juiz.service';
 import { FalaTraduzida } from '../shared/types';
+import { rodarNoTrace, Trace } from '../trace/trace';
 
 interface PedidoStream {
   system: string;
@@ -69,5 +70,14 @@ describe('JuizService', () => {
     expect(conteudo).toContain('Ele aplica uma chave de calcanhar.');
     expect(conteudo).toContain('28'); // 2 s × 14 chars/s
     expect(vereditos).toEqual([{ id: 3, aprovado: false, motivo: 'heel hook se fala em inglês' }]);
+  });
+
+  it('registra a chamada no trace com o papel de juiz', async () => {
+    streamMock.mockReturnValue(respostaDoClaude({ vereditos: [{ id: 3, aprovado: true }] }));
+    const trace = new Trace();
+
+    await rodarNoTrace(trace, () => service.avaliar(falas));
+
+    expect(trace.chamadas.map((c) => c.papel)).toEqual(['juiz']);
   });
 });

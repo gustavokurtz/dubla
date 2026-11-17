@@ -2,6 +2,8 @@ import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { TranscricaoService } from './transcricao.service';
 import { TERMOS_RECONHECIMENTO } from '../traducao/guia-bjj';
+import { custoTranscricao } from '../custos/custo';
+import { rodarNoTrace, Trace } from '../trace/trace';
 
 const transcribeMock = jest.fn();
 jest.mock('assemblyai', () => ({
@@ -14,6 +16,7 @@ jest.mock('assemblyai', () => ({
 const respostaGravada = {
   status: 'completed',
   error: null,
+  audio_duration: 290,
   words: [
     { text: 'Can', start: 500, end: 700, confidence: 0.9, speaker: 'B' },
     { text: 'I', start: 720, end: 800, confidence: 0.9, speaker: 'B' },
@@ -71,5 +74,20 @@ describe('TranscricaoService', () => {
       words: null,
     });
     await expect(service.transcrever(Buffer.from('x'))).rejects.toThrow('Audio file is empty');
+  });
+
+  it('registra no trace a duração do áudio transcrito e o custo', async () => {
+    transcribeMock.mockResolvedValue(respostaGravada);
+    const trace = new Trace();
+
+    await rodarNoTrace(trace, () => service.transcrever(Buffer.from('audio')));
+
+    expect(trace.chamadas).toEqual([
+      expect.objectContaining({
+        servico: 'assemblyai-transcricao',
+        segundos: 290,
+        custo: custoTranscricao(290),
+      }),
+    ]);
   });
 });

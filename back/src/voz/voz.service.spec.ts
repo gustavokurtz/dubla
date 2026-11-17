@@ -2,6 +2,8 @@ import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { Fala } from '../shared/types';
 import { VozService, VOZES_PT } from './voz.service';
+import { custoVoz } from '../custos/custo';
+import { rodarNoTrace, Trace } from '../trace/trace';
 
 const fetchMock = jest.fn();
 
@@ -138,5 +140,20 @@ describe('VozService', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('soma no trace os caracteres enviados e o custo das vozes', async () => {
+    fetchMock.mockResolvedValue(respostaOk('mp3'));
+    const trace = new Trace();
+
+    await rodarNoTrace(trace, async () => {
+      await service.sintetizar(1, 'Pega a gola', VOZES_PT[0]);
+      await service.sintetizar(2, 'Tá', VOZES_PT[0]);
+    });
+
+    expect(trace.chamadas).toEqual([
+      expect.objectContaining({ servico: 'assemblyai-voz', quantidade: 2, caracteres: 13 }),
+    ]);
+    expect(trace.custoTotal()).toBeCloseTo(custoVoz(13), 12);
   });
 });
