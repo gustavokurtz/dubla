@@ -63,13 +63,13 @@ Quando a tradução fica pronta, um juiz (outra chamada do Claude, com critério
 - **Por quê:** é o judge que você pediu, para a tradução não sair com cara de máquina (O6, O3).
 - **Como a gente confere:** testes com respostas simuladas do Claude conferem o vai-e-volta e o limite de 2 tentativas. Nos vídeos reais, o relatório mostra os vereditos.
 
-### R7 — Cada pessoa fala com a própria voz, em português
+### R7 — Cada pessoa fala com uma voz pronta própria, em português
 
-Quando o vídeo tem uma ou mais pessoas falando, cada uma ganha um clone da própria voz, feito a partir de uns 30 segundos do próprio vídeo, e fala português com esse timbre.
+Quando o vídeo tem uma ou mais pessoas falando, cada uma recebe uma das vozes prontas em português da AssemblyAI e fala sempre com ela. Hoje existem duas: Nelson (homem mais velho, voz grave) e Benício (jovem). A pessoa que mais fala no vídeo fica com o Nelson, a segunda com o Benício. Com uma terceira pessoa ou mais, as vozes se repetem e o relatório avisa. Não tem clone: a AssemblyAI só cria clone pelo painel do site, e você escolheu ficar só com as vozes prontas (2026-11-17).
 
-- **Exemplo:** o professor de voz grave fala português com voz grave, e o aluno com a voz dele. As duas nunca se trocam.
+- **Exemplo:** o professor, que fala mais, sai com o Nelson e o aluno com o Benício. As duas vozes nunca se trocam no meio do vídeo.
 - **Por quê:** voz natural e uma voz para cada pessoa é o que tira a cara de robô (O4, O1).
-- **Como a gente confere:** na sondagem do começo, você ouve se o clone em português soa natural. Nos vídeos reais, confere que as vozes não se trocam.
+- **Como a gente confere:** na sondagem do começo, você ouve se as duas vozes prontas soam naturais lendo falas de jiu-jitsu. Nos vídeos reais, confere que as vozes não se trocam.
 
 ### R8 — O som ambiente do vídeo continua
 
@@ -117,4 +117,3 @@ Quando a pipeline estiver pronta, você assiste a 2 vídeos curtos escolhidos po
 - A separação de voz e fundo roda de graça na sua placa de vídeo (Demucs), já que o ElevenLabs saiu — decidido por mim, porque a AssemblyAI não faz essa separação e o Demucs é gratuito.
 - Antes de construir o resto, um teste curto da voz clonada em português, para você ouvir — decidido por mim, porque a voz da AssemblyAI é nova (outubro de 2026) e ninguém a ouviu em português ainda. Se não soar natural, você decide a troca antes de investirmos no resto.
 - Caso extremo do encaixe: se a fala não couber nem depois de encurtar 3 vezes, acelerar 15% e usar o silêncio seguinte, ela termina com um fade-out curto quando a próxima fala começa, e o relatório marca "cortada". Assim a sincronia nunca se perde — decidido por mim, porque é a única saída que respeita o limite de 15% e "nunca por cima da próxima fala". Se aparecer nos vídeos de teste, a gente revê juntos.
-- O clone de voz de cada pessoa é apagado na AssemblyAI depois que o vídeo fica pronto — decidido por mim, para não acumular vozes de terceiros na sua conta.

@@ -20,8 +20,9 @@
 
 | Questão | Decisão | Porquê |
 |---|---|---|
-| Provedor de transcrição e voz | AssemblyAI para os dois (usuário) | Quer um só provedor, barato, com quem-fala e clone |
-| Voz | Clone por pessoa a partir de ~30 s de voz limpa do próprio vídeo (usuário) | Natural, timbre original |
+| Provedor de transcrição e voz | AssemblyAI para os dois (usuário) | Quer um só provedor, barato, com quem-fala |
+| Voz | Só vozes prontas PT da AssemblyAI (usuário, 2026-11-17, depois de saber que clone só sai pelo painel): pessoa que mais fala → `aai-nelson`, segunda → `aai-benicio`, da terceira em diante alterna e o relatório marca (decidido por mim) | A API não cria clone; só existem 2 vozes PT |
+| Síntese | REST `POST https://tts.us.assemblyai.com/v1/speech` com `fetch` (`language: portuguese`, `encoding: mp3`, `stream: false`, chave em `Authorization`); sem SDK (decidido por mim) | É um POST só; `speed` só aceita 1, então velocidade fica no ffmpeg |
 | Fundo | Separar voz e fundo; manter fundo (usuário) | Parecer nativo |
 | Termos | Tatame BR (usuário) | — |
 | Fala longa | Encurtar (Claude) → atempo ≤ 1,15 → avançar sobre silêncio até o início da próxima fala; vídeo intocado (usuário) | Sincronia |
@@ -35,13 +36,12 @@
 | Orçamento de caracteres | `duração × 14 chars/s` informado ao tradutor como alvo; a conferência real é a duração medida do áudio gerado (ffprobe), não o número de chars (decidido por mim) | Chars é estimativa; a medida que decide é a do áudio |
 | Glossário/guia BJJ | Um arquivo em `back/src/traducao/guia-bjj.ts` com (a) lista de termos para o reconhecimento da AssemblyAI e (b) o guia do tatame BR usado nos prompts do tradutor e do juiz (decidido por mim) | Uma fonte só para os três usos |
 | Relatório | JSON por vídeo em `relatorios/` na raiz (no `.gitignore`) + resumo no log (decidido por mim) | Medir R1 e afinar R5/R6; único arquivo persistido, é diagnóstico |
-| Clones | Apagados na AssemblyAI no `finally` do vídeo (decidido por mim) | Não acumular vozes de terceiros |
 | `CLAUDE.md` | Atualizado para a pipeline nova no fim da fase 3 (decidido por mim) | Hoje descreve uma pipeline que não existe (armadilha no `projeto.md`) |
 | Descartado | Whisper local / WhisperX (o usuário escolheu API); traduzir o texto inteiro de uma vez (é a causa da dessincronia); um juiz que reescreve sozinho (o juiz só julga, quem reescreve é o tradutor, para o critério de reprovação ficar separado da escrita) | — |
 
 ## Incertezas
 
-- **I1** — A voz clonada da AssemblyAI soa natural em PT-BR? O SDK Node (`assemblyai`) cobre TTS e clone, ou é preciso REST? Sondagem em T1, antes de construir em volta dela.
+- **I1** — As vozes prontas PT da AssemblyAI (Nelson, Benício) soam naturais lendo jiu-jitsu em PT-BR? O Benício tem sotaque de Portugal? Sondagem em T1, antes de construir em volta dela.
 - **I2** — Demucs roda na RTX 4050 6 GB em WSL com tempo aceitável (≤ 1× a duração do vídeo)? Sondagem em T2.
 - **I3** — Tradução + juiz soam nativos e cabem no tempo? Só se mede nos vídeos reais (T12).
 - **I4** — amix com centenas de entradas funciona no ffmpeg 6.1 (limite de entradas/descritores)? Verificado em T10 com 300 falas sintéticas.
@@ -52,11 +52,11 @@ Antes de usar qualquer SDK (assemblyai, @anthropic-ai/sdk, zod), consultar Conte
 
 ### Fase 1 — A voz é aprovada e a pipeline já sabe quem fala e quando
 
-- **T1** — Sondagem da voz clonada em PT-BR
+- **T1** — Sondagem das vozes prontas em PT-BR
   - Atende: R7, R9
-  - Como: pedir ao dev `ASSEMBLYAI_API_KEY` e `ANTHROPIC_API_KEY` no `.env` da raiz e os 2 vídeos de teste (caminho local). Descobrir via Context7/docs a API de TTS e clone da AssemblyAI. Script `back/scripts/sondagem-voz.ts`: recorta ~30 s de fala do professor do vídeo 1 (ffmpeg), cria o clone, gera 5 falas fixas de jiu-jitsu em PT-BR com o clone e as mesmas 5 com uma voz pronta PT-BR da biblioteca, salva os mp3 em `relatorios/sondagem/`, apaga o clone.
+  - Como: pedir ao dev `ASSEMBLYAI_API_KEY` e `ANTHROPIC_API_KEY` no `.env` da raiz e os 2 vídeos de teste (caminho local). Script `back/scripts/sondagem-voz.ts`: gera 5 falas fixas de jiu-jitsu em PT-BR com `aai-nelson` e as mesmas 5 com `aai-benicio`, salva os mp3 em `relatorios/sondagem/`. Os vídeos de teste ficam para T2 em diante.
   - Quem roda: dev (ouve e julga; a rodada é paga e pede o "pode")
-  - Meta: dev diz que o clone soa natural. Orçamento: 2 rodadas, < US$1. Se esgotar: parar e trazer ao usuário (manter transcrição na AssemblyAI e escolher outro provedor de voz).
+  - Meta: dev diz que as duas vozes soam naturais (ou que uma serve). Orçamento: 2 rodadas, < US$1. Se esgotar: parar e trazer ao usuário (manter transcrição na AssemblyAI e escolher outro provedor de voz).
 - **T2** — Demucs instalado e serviço de separação
   - Atende: R8
   - Como: venv `back/.venv-demucs` (no `.gitignore`), `pip install demucs` com torch CUDA; `SeparacaoService.separar(audio) → { voz, fundo }` em `back/src/separacao/`, padrão temp dir do `FfmpegService`.
@@ -92,10 +92,10 @@ Antes de usar qualquer SDK (assemblyai, @anthropic-ai/sdk, zod), consultar Conte
 
 ### Fase 3 — Voz, sincronia e vídeo final
 
-- **T8** — Clone por pessoa e voz de cada fala
+- **T8** — Voz de cada pessoa e áudio de cada fala
   - Atende: R7
-  - Como: `VozService` em `back/src/voz/`: para cada pessoa, junta as falas mais longas dela do áudio **de voz separada** (T2) até ~30 s, cria o clone, gera o áudio de cada fala com o clone da pessoa, apaga os clones no `finally`.
-  - Teste: SDK mockado; confere que cada fala usa o clone da sua pessoa e que os clones são apagados mesmo com erro.
+  - Como: função pura `atribuirVozes(falas)` → pessoa → voz (ordem por tempo total de fala; Nelson, Benício, alterna da 3ª em diante, marcando repetição); `VozService` em `back/src/voz/` gera o áudio de cada fala com a voz da pessoa via `POST /v1/speech`.
+  - Teste: `atribuirVozes` com 1, 2 e 3 pessoas; `fetch` mockado confere que cada fala usa a voz da sua pessoa e que erro HTTP vira erro explícito.
 - **T9** — Encaixe no tempo
   - Atende: R1, R2
   - Como: função pura `planejarEncaixe(fala, duracaoAudio, inicioProximaFala)` → `{ acao: ok | encurtar | acelerar | avancar | cortar, atempo, fim }`, seguindo a ordem decidida; o laço (medir com ffprobe → encurtar até 3× → regerar voz) fica no orquestrador.
@@ -106,7 +106,7 @@ Antes de usar qualquer SDK (assemblyai, @anthropic-ai/sdk, zod), consultar Conte
   - Teste: monta um vídeo sintético (cor sólida + silêncio) com 3 falas de tom (sine) em 1 s, 3 s e 5 s e confere, por `silencedetect`, que cada tom começa no instante certo (±0,1 s). Verificar por: mesmo teste com 300 falas sintéticas (I4).
 - **T11** — Orquestrador novo e limpeza
   - Atende: R1, R9
-  - Como: `IngestionService` na ordem: extrair áudio → separar (Demucs) → transcrever → traduzir + juiz → clones + voz → encaixe → montar → relatório. Remover `back/src/openai/`, `back/src/elevenlabs/` e as dependências `openai` e `@elevenlabs/elevenlabs-js`; consertar as specs vermelhas que ficarem (providers mockados). Atualizar `CLAUDE.md` (pipeline, variáveis de ambiente, venv do Demucs).
+  - Como: `IngestionService` na ordem: extrair áudio → separar (Demucs) → transcrever → traduzir + juiz → voz → encaixe → montar → relatório. Remover `back/src/openai/`, `back/src/elevenlabs/` e as dependências `openai` e `@elevenlabs/elevenlabs-js`; consertar as specs vermelhas que ficarem (providers mockados). Atualizar `CLAUDE.md` (pipeline, variáveis de ambiente, venv do Demucs).
   - Teste: spec do orquestrador com todos os serviços mockados conferindo a ordem e que o relatório recebe todas as falas.
 
 **Fim da fase 3:** suíte inteira, typecheck e lint verdes (`projeto.md`); vídeo 1 sai dublado de ponta a ponta numa rodada real com o "pode" do dev.
@@ -130,6 +130,6 @@ Validação manual (o usuário roda no final):
 
 1. `pnpm dev`, subir o vídeo 2 pela tela → baixa o vídeo dublado (R9, R11)
 2. Pular para o meio e o fim do vídeo → a voz bate com o movimento na tela (R1, R2)
-3. Ouvir as duas pessoas → cada uma com o próprio timbre, sem trocar (R7)
+3. Ouvir as duas pessoas → cada uma com a sua voz pronta, sem trocar (R7)
 4. Ouvir o fundo → música/ambiente presentes, sem inglês por baixo (R8)
 5. Abrir o relatório em `relatorios/` → todas as falas com quem falou, português e veredito do juiz (R10, R3, R4, R5, R6)
