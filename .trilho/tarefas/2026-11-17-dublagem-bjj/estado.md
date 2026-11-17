@@ -6,7 +6,7 @@
 
 ## Onde paramos
 
-Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz de cada pessoa) feita, T9 a seguir.
+Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz) e T9 (encaixe) feitas, T10 a seguir.
 
 ## Tarefas
 
@@ -19,7 +19,7 @@ Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz de cada pessoa) feita, T9 a segui
 - T6 — feito (`juiz.service.ts`, `revisar-com-juiz.ts`, `TraducaoService.refazer`; 7 testes novos)
 - T7 — feito (`back/src/relatorio/relatorio.ts`; 3 testes)
 - T8 — feito (`back/src/voz/`; 5 testes)
-- T9 — pendente
+- T9 — feito (`back/src/encaixe/planejar-encaixe.ts`; 8 testes)
 - T10 — pendente
 - T11 — pendente
 - T12 — pendente
@@ -28,7 +28,7 @@ Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz de cada pessoa) feita, T9 a segui
 
 ## Próximo passo
 
-T9 (encaixe no tempo): função pura `planejarEncaixe(fala, duracaoAudio, inicioProximaFala)` com os casos do plano; usa o tipo `EncaixeDaFala` já criado em `shared/types.ts`.
+T10 (mixagem): `FfmpegService.montarVideo(video, fundo, falasPosicionadas)` com `atempo` + `adelay` + `amix normalize=0`, fade 80 ms nas cortadas, vídeo copiado, duração do vídeo; teste com vídeo sintético e 3 tons (silencedetect), depois 300 falas (I4).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -75,6 +75,8 @@ T9 (encaixe no tempo): função pura `planejarEncaixe(fala, duracaoAudio, inicio
 - T7: `montarRelatorio` (puro), `linhaDaFala` (linha do log no formato do exemplo da spec R10) e `gravarRelatorio(relatorio, pasta, data)` em `back/src/relatorio/relatorio.ts`. Tipo `EncaixeDaFala` criado em `shared/types.ts` antes da T9 (campos opcionais no relatório; a T9 produz). Fala sem encaixe conta em `semDados`; `maiorDesvioInicio` é `null` sem dados.
 
 - T8: `atribuirVozes(falas, vozes)` em `voz/atribuir-vozes.ts` devolve `{ [pessoa]: { voz, repetida } }` (ordem por tempo total de fala). `VozService.gerarAudios(falas)` gera em sequência e devolve `{ id, voz, audio }`; `sintetizar(id, texto, voz)` é pública para o encaixe regerar a fala depois de encurtar. `VOZES_PT` em `voz/voz.service.ts`. `VozModule` ainda não importado (T11).
+
+- T9: `planejarEncaixe({ inicio, fim, limite, duracaoAudio, encurtamentos })` devolve `EncaixeDaFala`. `acao: 'encurtar'` é o pedido ao orquestrador (encurtar → regerar → chamar de novo); o resultado final é sempre `ok | acelerar | avancar | cortar`, e o encurtamento aparece em `encurtamentos`. Depois do 1º encurtamento, só encurta de novo se nem 15% + silêncio bastam (até 3). Espaço = até `min(fim, limite)` (falas sobrepostas de duas pessoas). `atempo` arredondado para cima em 3 casas. Para a T11: o balde `encurtar` do resumo do relatório fica sempre 0 — contar encurtadas por `encurtamentos > 0` ao ligar o relatório.
 
 ## Resultado
 
