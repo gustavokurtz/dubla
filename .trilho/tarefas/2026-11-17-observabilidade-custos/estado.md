@@ -6,14 +6,14 @@
 
 ## Onde paramos
 
-T1 e T2 feitas: custos (`back/src/custos/`) e trace por job (`back/src/trace/`, AsyncLocalStorage); Claude, transcrição e voz registram no trace corrente. T3 feita: tradutor no Sonnet 5.5 e juiz no Haiku 5.5, ambos esforço médio.
+T1 e T2 feitas: custos (`back/src/custos/`) e trace por job (`back/src/trace/`, AsyncLocalStorage); Claude, transcrição e voz registram no trace corrente. T3 feita: tradutor no Sonnet 5.5 e juiz no Haiku 5.5, ambos esforço médio. T4 feita: `back/scripts/comparar-modelos.ts` (rodado com `--simulado`).
 
 ## Tarefas
 
 - T1 — feito (`custo.spec.ts` verde, 8 testes)
 - T2 — feito (`trace.spec.ts`, `claude.spec.ts` + specs de tradução/juiz/transcrição/voz; suíte 91 verde)
 - T3 — feito (specs de tradução e juiz conferem modelo/esforço/fallback; suíte 93 verde)
-- T4 — em andamento
+- T4 — feito (`--simulado` no relatório do arm bar: 72 falas, refazer exercitado, tabela de custo gerada)
 - T5 — pendente
 - T6 — pendente
 - T7 — pendente
@@ -30,7 +30,7 @@ T1 e T2 feitas: custos (`back/src/custos/`) e trace por job (`back/src/trace/`, 
 
 ## Próximo passo
 
-T4: `back/scripts/comparar-modelos.ts <relatorio-opus.json>` com flag `--simulado`; gera `relatorios/comparacao-<data>.md` (EN, PT Opus, PT novo, veredito, tamanho × alvo, custo por chamada e total).
+T5: pedir o "pode" e rodar `cd back && node --env-file=../.env -r ts-node/register scripts/comparar-modelos.ts ../relatorios/2026-11-17-bjj-moves-arm-bar-from-guard-by-john-danaher.json` (só Claude); depois comparar fala a fala pelos 4 critérios (meta: 0 erros de termo/sentido, ≤ 5 de 72 piores que o Opus).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -56,6 +56,7 @@ T4: `back/scripts/comparar-modelos.ts <relatorio-opus.json>` com flag `--simulad
 - T2: `chamarClaude` ganhou um objeto de opções `{ papel }` (a T3 acrescenta modelo e esforço nele). A chamada é registrada no trace antes de checar recusa/corte, porque foi cobrada. Transcrição concluída sem `audio_duration` é erro explícito (o SDK tipa como opcional). Vozes somadas numa linha por etapa (`Trace.somarVoz`); caracteres = `texto.length`.
 - T2: custo usa `resposta.model` (o modelo que de fato respondeu). Se um fallback server-side cair em modelo sem preço, a chamada falha com erro explícito; o custo da parte recusada antes do fallback (`usage.iterations`) não é separado.
 - T3: modelo/esforço/fallback ficam numa tabela por papel dentro de `claude.ts` (`POR_PAPEL`), e não passados por cada serviço como o plano dizia: um lugar só para trocar modelo, e os serviços continuam passando só o papel. Teste antigo que conferia Opus/high foi atualizado para a regra nova (R2).
+- T4: a comparação vai para `relatorios/comparacao-<AAAA-MM-DD-HH-MM>[-simulado].md` (com hora, para a segunda rodada não sobrescrever a primeira).
 
 ## Resultado
 
