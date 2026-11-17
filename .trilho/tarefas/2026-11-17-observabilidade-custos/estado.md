@@ -19,7 +19,7 @@ Fase 1 fechada (T1–T5, review feito): custo medido por chamada (`back/src/cust
 - T7 — feito (specs de ingestão, voz e encaixe; suíte 100 verde)
 - T8 — feito (`jobs.controller.spec.ts`; suíte 106 verde; back de pé: 404 em job inexistente nas 3 rotas, inclusive SSE, 400 sem vídeo, `/ingestion/dublar` some)
 - T9 — feito (`pnpm build` verde; prova visual na T10)
-- T10 — pendente
+- T10 — esperando o dev: ver a tela andar no ensaio sem custo (`scripts/servidor-ensaio.ts` + `pnpm dev:front`) e baixar o vídeo
 - T11 — pendente
 - T12 — pendente
 - T13 — pendente
@@ -30,7 +30,7 @@ Fase 1 fechada (T1–T5, review feito): custo medido por chamada (`back/src/cust
 
 ## Próximo passo
 
-Fase 2, T10: ensaio sem custo pela tela (back com services simulados rodando pelo job); preparar o comando e entregar ao dev.
+Ler o resultado da T10 (o dev assiste o ensaio pela tela). Com ela feita: fim da fase 2 (suíte, lint, typecheck, `pnpm build`, code review de a4842cd..HEAD — último review — e handoff).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -56,6 +56,9 @@ Fase 2, T10: ensaio sem custo pela tela (back com services simulados rodando pel
 - **Rodada 2** (2026-11-17, `relatorios/comparacao-2026-11-17-20-43.md`): tradutor Sonnet 5.5 high + juiz Haiku 5.5 medium. Custo US$ 0,111 (tradução 9.108 entrada / 8.939 saída = 0,108; juiz 0,003; nenhuma refeita). 0 erros de termo ou sentido; 4 falas acima de 115% do alvo onde o Opus cabia (#15 35/29, #27 37/29, #41 29/25, #72 18/15, poucos caracteres); #42 "bem claramente" tão estranha quanto a do Opus. Meta atingida → adotado effort high no tradutor. Hipótese da rodada 1 confirmada.
 - Referência de custo do Opus: com os mesmos tokens da rodada 2 daria ~US$ 0,34 (Opus high gera mais saída); a fatura do usuário dizia ~US$ 1 por vídeo.
 
+- T10 (eu, por `curl`, 2026-11-17): servidor do ensaio + arm bar → SSE com 460 eventos: 7 etapas na ordem, vozes e encaixe 0→72/72, `pronto`, `GET /video` 200 com 14,6 MB e nome `BJJ-Moves-Arm-Bar-From-Guard-by-John-Danaher-dublado.mp4`. Custo 0 (tudo simulado). Falta o dev ver a tela.
+- `pgrep -f <padrão>` também casa com o shell do Bash quando o texto do comando contém o nome do processo (ex.: um heredoc que cita `servidor-ensaio`): matar o processo num comando separado.
+
 ## Hipóteses descartadas
 
 - nenhuma
@@ -71,6 +74,7 @@ Fase 2, T10: ensaio sem custo pela tela (back com services simulados rodando pel
 - T7: dublagem por link tem uma etapa a mais antes das 7, "Baixando o vídeo" (o download leva tempo e sem etapa a tela ficaria parada); a T9 mostra essa etapa sem contar no "n de 7". O log do servidor continua com uma linha por etapa (`IngestionService.etapa`). O encaixe (função pura) avança o trace por `traceAtual()`, como os services.
 - T8: o SSE manda o estado inteiro do job (o mesmo do `GET /jobs/:id`: situação, posição, etapas com custo, chamadas, custo total) a cada evento do trace ou mudança de situação de qualquer job, e completa no `pronto`/`falhou`. Tempo decorrido a tela calcula de `iniciadoEm`. Nome do arquivo baixado: `<nome>-dublado.mp4`; job de link ainda usa a URL como nome (ponto em aberto: guardar o título do YouTube no job).
 - T9: mantido o visual do card (Crisp Glass); só o estado de processamento mudou. Barra real (feito/total) nas vozes e no encaixe, animada nas outras etapas. Download por `<a href=/api/jobs/:id/video download>`. Se o SSE fecha sem o job (back reiniciado), a tela mostra erro em vez de ficar parada.
+- T10: os simulados do ensaio foram para `back/scripts/servicos-simulados.ts`, usados pelo `ensaio-sem-custo.ts` e pelo novo `servidor-ensaio.ts` (sobe o `AppModule` com `Test.createTestingModule().overrideProvider`). Na voz só o `sintetizar` é simulado, então a atribuição de vozes e a contagem de falas são as reais (antes o ensaio simulava o `gerarAudios` inteiro).
 - T4: a comparação vai para `relatorios/comparacao-<AAAA-MM-DD-HH-MM>[-simulado].md` (com hora, para a segunda rodada não sobrescrever a primeira).
 
 ## Resultado
