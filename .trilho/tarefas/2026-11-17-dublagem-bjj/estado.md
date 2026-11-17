@@ -10,7 +10,8 @@ Planejamento fechado: spec, plano e `.trilho/projeto.md` (trilho-init) commitado
 
 ## Tarefas
 
-- T1 — esperando o dev: ouvir `relatorios/sondagem/*.mp3` (rodada 1 de 2 feita) e decidir se volta o clone manual pelo painel
+- T0 — pendente (novo: baixar do YouTube)
+- T1 — pendente (refeita: sondagem do clone em outro provedor; rodada das vozes prontas já feita, fica como comparação)
 - T2 — pendente
 - T3 — pendente
 - T4 — pendente
@@ -22,11 +23,12 @@ Planejamento fechado: spec, plano e `.trilho/projeto.md` (trilho-init) commitado
 - T10 — pendente
 - T11 — pendente
 - T12 — pendente
+- T13 — pendente (novo: link do YouTube na tela)
 - Entrega — pendente (verificação, push + PR para `master`)
 
 ## Próximo passo
 
-Ler o resultado da T1: com a chave no `.env` e o "pode", rodar em `back/`: `node --env-file=../.env --experimental-strip-types scripts/sondagem-voz.mts`; dev ouve `relatorios/sondagem/*.mp3` e julga. Enquanto isso, T2 (Demucs) não depende da T1. Vídeos de teste (3–5 min, um com 2 pessoas) pedidos para T2.
+T0: venv `back/.venv-py` com `yt-dlp`, `YoutubeService` + `back/scripts/baixar-video.mts`; pedir ao dev o link de 1 vídeo do YouTube (3–5 min, uma pessoa). Depois T1: confirmar na doc oficial Cartesia/Fish Audio/Inworld e escrever `sondagem-clone.mts` (rodar só com o "pode").
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -47,7 +49,8 @@ Ler o resultado da T1: com a chave no `.env` e o "pode", rodar em `back/`: `node
 - Pesquisa de preços (2026-11, fontes de terceiros): AssemblyAI TTS-1 US$15/1M chars, PT suportado, clone com 30 s, sem controle de velocidade/SSML no lançamento (por isso o atempo fica no ffmpeg).
 
 - Sondagem T1 rodada 1 (2026-11-17, com o "pode"): 10 mp3 gerados, 838 caracteres (~US$0,013), 5,4–7,7 s por fala; Nelson ~5% mais lento que Benício nas mesmas falas.
-- Usuário (2026-11-17), depois de escolher "só vozes prontas": "acho q clonar a voz vai ser melhor ... nao tem como mesmo o assembly ai fzr isso?". Decisão do R7 reaberta; em aberto.
+- Usuário (2026-11-17), depois de escolher "só vozes prontas": "acho q clonar a voz vai ser melhor ... nao tem como mesmo o assembly ai fzr isso?". Decisão do R7 reaberta.
+- decidido (2026-11-17): voz por clone via API de outro provedor ("Sondar clone de outro provedor"); download do YouTube no app e em script ("os dois"); teste real com 1 vídeo de uma pessoa, duas pessoas por testes automáticos. Spec R7, R9, R11 e R12 (nova) e plano (T0, T1, T2, T8, T12, T13) ajustados.
 
 ## Hipóteses descartadas
 
