@@ -3,11 +3,8 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FfmpegModule } from './ffmpeg/ffmpeg.module';
-import { ElevenlabsModule } from './elevenlabs/elevenlabs.module';
-import { OpenaiModule } from './openai/openai.module';
 import { ConfigModule } from '@nestjs/config';
 import { IngestionModule } from './ingestion/ingestion.module';
-
 
 @Module({
   imports: [
@@ -15,9 +12,9 @@ import { IngestionModule } from './ingestion/ingestion.module';
       isGlobal: true, // disponível em todos os módulos sem reimportar
       envFilePath: path.join(process.cwd(), '..', '.env'),
     }),
-    FfmpegModule, 
-    OpenaiModule, 
-    ElevenlabsModule, IngestionModule],
+    FfmpegModule,
+    IngestionModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -118,3 +118,14 @@ describe('FfmpegService.montarVideo', () => {
     expect(Math.abs(d.audio - 8)).toBeLessThanOrEqual(0.1);
   }, 60000);
 });
+
+describe('FfmpegService.medirDuracao', () => {
+  it('mede a duração de um mp3 em memória', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dubla-teste-'));
+    try {
+      expect(await new FfmpegService().medirDuracao(tom(dir, 't.mp3', 1.5))).toBeCloseTo(1.5, 1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

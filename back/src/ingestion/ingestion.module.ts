@@ -2,10 +2,13 @@ import { Module } from '@nestjs/common';
 import { IngestionService } from './ingestion.service';
 import { IngestionController } from './ingestion.controller';
 import { FfmpegModule } from '../ffmpeg/ffmpeg.module';
-import { OpenaiModule } from '../openai/openai.module';
+import { SeparacaoModule } from '../separacao/separacao.module';
+import { TranscricaoModule } from '../transcricao/transcricao.module';
+import { TraducaoModule } from '../traducao/traducao.module';
+import { VozModule } from '../voz/voz.module';
 
 @Module({
-  imports: [FfmpegModule, OpenaiModule],
+  imports: [FfmpegModule, SeparacaoModule, TranscricaoModule, TraducaoModule, VozModule],
   controllers: [IngestionController],
   providers: [IngestionService],
 })

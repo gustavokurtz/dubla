@@ -6,9 +6,9 @@
 
 | Ação | Comando | Quando rodar | Observação |
 |---|---|---|---|
-| Testes (todos) | `cd back && CI=true npx jest` | fim de fase e entrega, se entrou código de produção depois da última vez que passou | leva ~3 s (medido em 2026-11-17). Em 2026-11-17 a suíte estava vermelha: 6 de 9 specs geradas pelo Nest falham por falta de `ConfigService` no módulo de teste |
+| Testes (todos) | `cd back && CI=true npx jest` | fim de fase e entrega, se entrou código de produção depois da última vez que passou | leva ~5 s (2026-11-17; `montar-video.spec.ts` roda o ffmpeg real). Verde desde a T11 da dublagem-bjj |
 | Teste (um arquivo) | `cd back && CI=true npx jest <caminho>` | a cada tarefa | `pnpm --filter dubla run test` falha sem TTY (pnpm tenta reinstalar); usar `npx jest` direto em `back/` |
-| Lint | `cd back && npx eslint "src/**/*.ts"` | fim de fase e entrega | em 2026-11-17: 8 erros preexistentes (maioria prettier). `npm run lint` usa `--fix` e reescreve arquivos |
+| Lint | `cd back && npx eslint "src/**/*.ts"` | fim de fase e entrega | em 2026-11-17: 4 problemas preexistentes (`ffmpeg.service.ts` require/any, `ingestion.controller.ts` prettier, `main.ts` promise); não reformatar código alheio com prettier. `npm run lint` usa `--fix` e reescreve arquivos |
 | Typecheck | `cd back && npx tsc --noEmit -p tsconfig.json` | fim de fase e entrega | ~2 s |
 | Build | `pnpm build` (raiz) | entrega | front: `tsc -b && vite build`; back: `nest build` |
 
@@ -53,6 +53,5 @@ Conventional Commits em inglês, minúsculo, sem escopo, sem ponto final. Exempl
 
 ## Armadilhas
 
-- `CLAUDE.md` descreve uma pipeline por segmentos com ElevenLabs que não é a que roda: em 2026-11-17 a pipeline real usava Whisper texto corrido + TTS da OpenAI num bloco só. Confie no código, não no `CLAUDE.md`, até ele ser atualizado.
 - Ferramentas Python (yt-dlp, demucs) ficam em `back/.venv-py`, criado com `uv` (`~/.local/bin/uv`): `python3 -m venv` falha porque o sistema não tem `python3.12-venv` (2026-11-17).
 - `pnpm` global é 11.x e o projeto foi instalado com 10.32.1 (store v10): o 11 recusa com `ERR_PNPM_UNEXPECTED_STORE`. Para adicionar dependência: `npx -y pnpm@10.32.1 --filter dubla add <pacote>` na raiz (2026-11-17).

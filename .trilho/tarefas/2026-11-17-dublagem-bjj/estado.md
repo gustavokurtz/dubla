@@ -6,7 +6,7 @@
 
 ## Onde paramos
 
-Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz), T9 (encaixe) e T10 (mixagem) feitas, T11 a seguir.
+Fases 1 e 2 fechadas. Fase 3 em curso: T8 a T11 feitas (pipeline nova ligada ao endpoint, suíte verde). Falta T13 (link do YouTube na tela) para fechar a fase 3.
 
 ## Tarefas
 
@@ -21,14 +21,14 @@ Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz), T9 (encaixe) e T10 (mixagem) fe
 - T8 — feito (`back/src/voz/`; 5 testes)
 - T9 — feito (`back/src/encaixe/planejar-encaixe.ts`; 8 testes)
 - T10 — feito (`FfmpegService.montarVideo`; teste real com ffmpeg; I4 verificada)
-- T11 — pendente
+- T11 — feito (`IngestionService.dublar`, `encaixe/encaixar-falas.ts`; openai/elevenlabs removidos; suíte 19/19 verde)
 - T12 — pendente
 - T13 — pendente (link do YouTube na tela)
 - Entrega — pendente (verificação, push + PR para `master`)
 
 ## Próximo passo
 
-T11 (orquestrador novo e limpeza): `IngestionService` na ordem extrair → separar → transcrever → traduzir + juiz → voz → encaixe (laço com `planejarEncaixe`, medir com ffprobe, `TraducaoService.encurtar` ainda não existe — conferir T5) → `montarVideo` → relatório. Remover `openai/`, `elevenlabs/`, `substituirAudio` se ficar sem uso, deps `openai` e `@elevenlabs/elevenlabs-js`; specs vermelhas verdes; `CLAUDE.md`.
+T13 (link do YouTube na tela): `POST /ingestion/dublar` aceita `url` além do arquivo; com `url`, `YoutubeService.baixar` antes (`YoutubeModule` ainda não importado no `IngestionModule`); campo no front. Depois: fim da fase 3 (suíte/tsc/lint, rodada real paga pelo link — pedir o "pode" — e code review).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -47,7 +47,7 @@ T11 (orquestrador novo e limpeza): `IngestionService` na ordem extrair → separ
 
 ## Aprendizados
 
-- Suíte do back (fim da fase 2): 12 suítes verdes, 6 vermelhas preexistentes (openai, elevenlabs, ingestion — falta `ConfigService` no módulo de teste); somem/viram verdes na T11. Lint: os mesmos 8 erros preexistentes; arquivos novos limpos.
+- Suíte do back (T11): 19/19 verde, 58 testes. Lint: 4 problemas preexistentes (ver `projeto.md`); arquivos novos limpos. App sobe (`ts-node src/main.ts`) e mapeia `POST /ingestion/dublar`.
 - AssemblyAI TTS: `POST https://tts.us.assemblyai.com/v1/speech` (`text` ≤ 5000, `voice_id`, `language: portuguese`, `encoding: mp3`, `stream: false`, chave crua em `Authorization`); `speed` só aceita 1, então velocidade fica no ffmpeg (`atempo`). Catálogo: `GET /v1/voices?scope=public&limit=100` paginado por `next_cursor` — 4073 vozes com `language` e `tags` (`accent:`, `age:`, `gender:`); 196 em português. Clone só pelo painel (por isso descartado).
 - AssemblyAI transcrição: `keyterms_prompt` máx. 100 termos / 8000 chars (sync: 2048 chars); nossa lista tem 97 termos / 1070 chars. Modelo padrão aceita keyterms.
 - Rodada real fase 2 (vídeo 1, 2026-11-17): AssemblyAI achou 96 falas de 1 pessoa (correto: o parceiro não fala). Claude: tradução 10.708 in / 9.235 out; juiz 13.121 / 3.519; 1 refazer + 1 reavaliação ~3k / ~100. Total ≈ US$0,38 Claude + ~US$0,02 AssemblyAI. Tempo: ~2 min. Juiz: 95 aprovadas de primeira, 1 na 2ª (fala 43), 0 reprovadas. Correção do inglês (R4) funcionou: "jiu-jitsu gatame"/"judo gatame" → "juji gatame", "arm bars" → "armbars", "keynote themes" → "key themes". Tradução sai bem enxuta (perto do alvo de chars).
@@ -82,6 +82,9 @@ T11 (orquestrador novo e limpeza): `IngestionService` na ordem extrair → separ
 - T9: `planejarEncaixe({ inicio, fim, limite, duracaoAudio, encurtamentos })` devolve `EncaixeDaFala`. `acao: 'encurtar'` é o pedido ao orquestrador (encurtar → regerar → chamar de novo); o resultado final é sempre `ok | acelerar | avancar | cortar`, e o encurtamento aparece em `encurtamentos`. Depois do 1º encurtamento, só encurta de novo se nem 15% + silêncio bastam (até 3). Espaço = até `min(fim, limite)` (falas sobrepostas de duas pessoas). `atempo` arredondado para cima em 3 casas. Para a T11: o balde `encurtar` do resumo do relatório fica sempre 0 — contar encurtadas por `encurtamentos > 0` ao ligar o relatório.
 
 - T10: `montarVideo(video, fundo, falas: FalaPosicionada[])` com `FalaPosicionada = { audio, encaixe: EncaixeDaFala }` (exportada de `ffmpeg.service.ts`). Duração final por `ffprobe` do vídeo + `-t` (sem `-shortest`). Cortada = `atrim` até `fimDublado − inicioDublado` + `afade` de 80 ms. Teste em `ffmpeg/montar-video.spec.ts` roda o ffmpeg real (~1 s). Lint do `ffmpeg.service.ts`: os 3 erros que restam são preexistentes (prettier reverteu só no meu trecho).
+
+- T11: laço do encaixe em `encaixe/encaixar-falas.ts` (função com dependências injetadas, padrão do `revisarComJuiz`), não dentro do `IngestionService`. Alvo do encurtar = `chars × espaço / duração medida`. Encurtar é por fala (1 chamada Claude cada); se a rodada real mostrar muitas, agrupar é otimização futura. Transcrição usa o áudio original (mp3), não a voz separada (wav grande; a original já funcionou na fase 2). `FfmpegService.medirDuracao(buffer)` novo; `substituirAudio` removido (sem uso). `orchestratePipelineVideo` virou `dublar(video, nome)`; o nome vem do `originalname` sem extensão. Balde `encurtar` do resumo do relatório continua sempre 0 (as encurtadas aparecem por fala em "encurtada N×"); não mexi para não mudar a T7 sem motivo.
+- `CLAUDE.md` reescrito para a pipeline nova (inglês, como estava); armadilha removida do `projeto.md`.
 
 ## Resultado
 

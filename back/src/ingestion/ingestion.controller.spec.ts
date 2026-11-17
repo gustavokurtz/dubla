@@ -8,7 +8,7 @@ describe('IngestionController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [IngestionController],
-      providers: [IngestionService],
+      providers: [{ provide: IngestionService, useValue: { dublar: jest.fn() } }],
     }).compile();
 
     controller = module.get<IngestionController>(IngestionController);

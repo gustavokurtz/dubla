@@ -1,43 +1,75 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { join } from 'path';
 import { FfmpegService } from '../ffmpeg/ffmpeg.service';
-import { OpenaiService } from '../openai/openai.service';
+import { SeparacaoService } from '../separacao/separacao.service';
+import { TranscricaoService } from '../transcricao/transcricao.service';
+import { TraducaoService } from '../traducao/traducao.service';
+import { JuizService } from '../traducao/juiz.service';
+import { revisarComJuiz } from '../traducao/revisar-com-juiz';
+import { VozService } from '../voz/voz.service';
+import { encaixarFalas } from '../encaixe/encaixar-falas';
+import { gravarRelatorio, montarRelatorio } from '../relatorio/relatorio';
 
 @Injectable()
 export class IngestionService {
   private readonly logger = new Logger(IngestionService.name);
 
   constructor(
-    private ffmpeg: FfmpegService,
-    private openai: OpenaiService,
+    private readonly ffmpeg: FfmpegService,
+    private readonly separacao: SeparacaoService,
+    private readonly transcricao: TranscricaoService,
+    private readonly traducao: TraducaoService,
+    private readonly juiz: JuizService,
+    private readonly voz: VozService,
   ) {}
 
-  async orchestratePipelineVideo(buffer: Buffer): Promise<Buffer> {
-    this.logger.log('Iniciando pipeline de dublagem...');
+  // Dubla o vídeo fala por fala, cada uma no instante da original, e grava o relatório.
+  async dublar(video: Buffer, nome: string): Promise<Buffer> {
+    this.logger.log(`1/7 Extraindo áudio de "${nome}"`);
+    const audio = await this.ffmpeg.extrairAudio(video);
 
-    this.logger.log('1/5 Extraindo áudio do vídeo...');
-    const audioBuffer = await this.ffmpeg.extrairAudio(buffer);
+    this.logger.log('2/7 Separando voz e fundo');
+    const { fundo } = await this.separacao.separar(audio);
 
-    this.logger.log('2/5 Transcrevendo áudio com Whisper...');
-    const transcricao = await this.openai.transcreverAudio(audioBuffer);
+    this.logger.log('3/7 Transcrevendo');
+    const falas = await this.transcricao.transcrever(audio);
 
-    if (!transcricao) {
-      throw new Error('Whisper não retornou transcrição');
-    }
+    this.logger.log('4/7 Traduzindo e revisando com o juiz');
+    const traduzidas = await this.traducao.traduzir(falas);
+    const revisadas = await revisarComJuiz(traduzidas, this.juiz, this.traducao);
 
-    this.logger.log('3/5 Traduzindo texto para PT-BR...');
-    const traducao = await this.openai.traduzirTexto(transcricao);
+    this.logger.log('5/7 Gerando as vozes');
+    const audios = await this.voz.gerarAudios(revisadas);
 
-    if (!traducao) {
-      throw new Error('GPT não retornou tradução');
-    }
+    this.logger.log('6/7 Encaixando cada fala no tempo');
+    const encaixadas = await encaixarFalas(
+      revisadas,
+      audios,
+      await this.ffmpeg.medirDuracao(video),
+      {
+        medir: (a) => this.ffmpeg.medirDuracao(a),
+        encurtar: (f, alvo, motivo) => this.traducao.encurtar(f, alvo, motivo),
+        sintetizar: (id, texto, voz) => this.voz.sintetizar(id, texto, voz),
+      },
+    );
 
-    this.logger.log('4/5 Gerando voz com OpenAI TTS...');
-    const novaVoz = await this.openai.gerarVoz(traducao);
+    this.logger.log('7/7 Montando o vídeo');
+    const final = await this.ffmpeg.montarVideo(
+      video,
+      fundo,
+      encaixadas.map((e) => ({ audio: e.audio, encaixe: e.fala.encaixe })),
+    );
 
-    this.logger.log('5/5 Substituindo áudio no vídeo...');
-    const videoFinal = await this.ffmpeg.substituirAudio(buffer, novaVoz);
-
-    this.logger.log('Pipeline concluído!');
-    return videoFinal;
+    const relatorio = montarRelatorio(
+      nome,
+      encaixadas.map((e) => e.fala),
+    );
+    const arquivo = await gravarRelatorio(
+      relatorio,
+      join(process.cwd(), '..', 'relatorios'),
+      new Date(),
+    );
+    this.logger.log(`Relatório: ${arquivo}\n${JSON.stringify(relatorio.resumo, null, 2)}`);
+    return final;
   }
 }

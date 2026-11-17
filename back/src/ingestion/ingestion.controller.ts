@@ -37,7 +37,8 @@ export class IngestionController {
     }
 
     try {
-      const videoFinal = await this.ingestionService.orchestratePipelineVideo(file.buffer);
+      const nome = file.originalname.replace(/\.[^.]+$/, '');
+      const videoFinal = await this.ingestionService.dublar(file.buffer, nome);
 
       res.set({
         'Content-Type': 'video/mp4',

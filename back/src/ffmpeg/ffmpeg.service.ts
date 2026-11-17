@@ -51,40 +51,6 @@ export class FfmpegService {
     }
   }
 
-  async substituirAudio(videoBuffer: Buffer, novoAudioBuffer: Buffer): Promise<Buffer> {
-    this.logger.log(`Substituindo áudio: vídeo=${videoBuffer.length} bytes, áudio=${novoAudioBuffer.length} bytes`);
-    const dir = await this.criarTempDir();
-    const tempVideo = join(dir, 'input.mp4');
-    const tempAudio = join(dir, 'audio.mp3');
-    const tempSaida = join(dir, 'output.mp4');
-    await writeFile(tempVideo, videoBuffer);
-    await writeFile(tempAudio, novoAudioBuffer);
-
-    try {
-      await new Promise<void>((resolve, reject) => {
-        ffmpeg(tempVideo)
-          .addInput(tempAudio)
-          .outputOptions(['-map 0:v', '-map 1:a', '-c:v copy', '-shortest', '-y'])
-          .output(tempSaida)
-          .on('error', (err: Error) => {
-            this.logger.error(`FFmpeg erro: ${err.message}`);
-            reject(err);
-          })
-          .on('end', () => {
-            this.logger.log('FFmpeg merge concluído');
-            resolve();
-          })
-          .run();
-      });
-
-      const resultado = await readFile(tempSaida);
-      this.logger.log(`Vídeo final: ${resultado.length} bytes`);
-      return resultado;
-    } finally {
-      await this.limparDir(dir);
-    }
-  }
-
   // Mixa o fundo com cada fala dublada no seu instante (R1, R8): atempo do encaixe,
   // corte com fade nas cortadas, adelay até o início. Vídeo copiado, duração = a do vídeo.
   async montarVideo(video: Buffer, fundo: Buffer, falas: FalaPosicionada[]): Promise<Buffer> {
@@ -132,6 +98,18 @@ export class FfmpegService {
           .run();
       });
       return await readFile(tempSaida);
+    } finally {
+      await this.limparDir(dir);
+    }
+  }
+
+  // Duração em segundos de um áudio ou vídeo em memória.
+  async medirDuracao(midia: Buffer): Promise<number> {
+    const dir = await this.criarTempDir();
+    const arquivo = join(dir, 'midia');
+    await writeFile(arquivo, midia);
+    try {
+      return await this.duracao(arquivo);
     } finally {
       await this.limparDir(dir);
     }
