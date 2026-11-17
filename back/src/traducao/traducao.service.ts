@@ -1,16 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import { Fala, FalaTraduzida } from '../shared/types';
 import { GUIA_TATAME } from './guia-bjj';
+import { chamarClaude } from './claude';
 
 // Estimativa de quanto texto cabe por segundo de fala. É só alvo para o
 // tradutor: quem decide se cabe é a duração medida do áudio gerado (T9).
 export const CHARS_POR_SEGUNDO = 14;
-
-const MODELO = 'claude-opus-5-5';
 
 const SYSTEM = `
 Você é um dublador brasileiro de vídeos de jiu-jitsu. Recebe as falas de um vídeo em inglês, transcritas automaticamente, e devolve para cada fala:
@@ -49,33 +47,34 @@ export class TraducaoService {
   // Corrige o inglês e traduz todas as falas do vídeo numa chamada só.
   async traduzir(falas: Fala[]): Promise<FalaTraduzida[]> {
     this.logger.log(`Traduzindo ${falas.length} falas`);
-    const entrada = falas.map((f) => {
-      const duracao = f.fim - f.inicio;
-      return {
-        id: f.id,
-        pessoa: f.pessoa,
-        duracaoSegundos: Number(duracao.toFixed(1)),
-        alvoCaracteres: Math.round(duracao * CHARS_POR_SEGUNDO),
-        textoEn: f.textoEn,
-      };
-    });
-    const saida = await this.chamar(
+    const saida = await chamarClaude(
+      this.cliente,
+      SYSTEM,
       SaidaTraducao,
-      `Falas do vídeo, em ordem:\n\n${JSON.stringify(entrada, null, 2)}`,
+      `Falas do vídeo, em ordem:\n\n${JSON.stringify(falas.map(entradaDaFala), null, 2)}`,
     );
+    return aplicarTraducao(falas, saida.falas);
+  }
 
-    const porId = new Map(saida.falas.map((f) => [f.id, f]));
-    return falas.map((fala) => {
-      const traduzida = porId.get(fala.id);
-      if (!traduzida || !traduzida.textoPt.trim()) {
-        throw new Error(`Tradutor não devolveu o português da fala ${fala.id}`);
-      }
-      return {
-        ...fala,
-        textoEnCorrigido: traduzida.textoEnCorrigido,
-        textoPt: traduzida.textoPt,
-      };
-    });
+  // Traduz de novo as falas que o juiz reprovou, com o motivo de cada uma.
+  async refazer(
+    reprovadas: FalaTraduzida[],
+    motivos: Map<number, string>,
+  ): Promise<FalaTraduzida[]> {
+    this.logger.log(`Refazendo ${reprovadas.length} falas reprovadas pelo juiz`);
+    const entrada = reprovadas.map((f) => ({
+      ...entradaDaFala(f),
+      textoEn: f.textoEnCorrigido,
+      textoPtReprovado: f.textoPt,
+      motivoDoJuiz: motivos.get(f.id),
+    }));
+    const saida = await chamarClaude(
+      this.cliente,
+      SYSTEM,
+      SaidaTraducao,
+      `O revisor reprovou estas falas. Escreva uma nova versão em português de cada uma, corrigindo o que o motivo aponta.\n\n${JSON.stringify(entrada, null, 2)}`,
+    );
+    return aplicarTraducao(reprovadas, saida.falas);
   }
 
   // Reescreve uma fala mais curta para caber no tempo (usado no encaixe).
@@ -86,7 +85,9 @@ export class TraducaoService {
       alvoCaracteres: alvoChars,
       motivo,
     };
-    const saida = await this.chamar(
+    const saida = await chamarClaude(
+      this.cliente,
+      SYSTEM,
       SaidaEncurtar,
       `Esta fala dublada não cabe no tempo. Reescreva o português mais curto, com no máximo o alvo de caracteres, mantendo a instrução técnica e o registro do tatame. Devolva só essa fala.\n\n${JSON.stringify(pedido, null, 2)}`,
     );
@@ -95,21 +96,35 @@ export class TraducaoService {
     }
     return saida.textoPt;
   }
+}
 
-  private async chamar<T>(schema: z.ZodType<T>, conteudo: string): Promise<T> {
-    const stream = this.cliente.beta.messages.stream({
-      model: MODELO,
-      max_tokens: 64000,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      output_config: { effort: 'high', format: betaZodOutputFormat(schema) },
-      system: SYSTEM,
-      messages: [{ role: 'user', content: conteudo }],
-    });
-    const resposta = await stream.finalMessage();
-    if (resposta.stop_reason !== 'end_turn' || !resposta.parsed_output) {
-      throw new Error(`Tradutor sem resposta válida (stop_reason: ${resposta.stop_reason})`);
+// O que o modelo vê de cada fala: tempo disponível e alvo de caracteres.
+export function entradaDaFala(f: Fala) {
+  const duracao = f.fim - f.inicio;
+  return {
+    id: f.id,
+    pessoa: f.pessoa,
+    duracaoSegundos: Number(duracao.toFixed(1)),
+    alvoCaracteres: Math.round(duracao * CHARS_POR_SEGUNDO),
+    textoEn: f.textoEn,
+  };
+}
+
+// Junta a saída do modelo às falas por id; fala sem português é erro.
+function aplicarTraducao(
+  falas: Fala[],
+  saida: z.infer<typeof SaidaTraducao>['falas'],
+): FalaTraduzida[] {
+  const porId = new Map(saida.map((f) => [f.id, f]));
+  return falas.map((fala) => {
+    const traduzida = porId.get(fala.id);
+    if (!traduzida || !traduzida.textoPt.trim()) {
+      throw new Error(`Tradutor não devolveu o português da fala ${fala.id}`);
     }
-    return resposta.parsed_output;
-  }
+    return {
+      ...fala,
+      textoEnCorrigido: traduzida.textoEnCorrigido,
+      textoPt: traduzida.textoPt,
+    };
+  });
 }

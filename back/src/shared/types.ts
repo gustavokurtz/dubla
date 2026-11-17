@@ -22,3 +22,10 @@ export interface FalaTraduzida extends Fala {
   textoEnCorrigido: string;
   textoPt: string;
 }
+
+// Fala depois do juiz (R6): veredito final e em qual tentativa saiu.
+export interface FalaRevisada extends FalaTraduzida {
+  juiz: 'aprovada' | 'reprovada';
+  tentativas: number;
+  motivoJuiz?: string; // último motivo de reprovação, quando reprovada
+}

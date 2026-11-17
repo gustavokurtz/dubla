@@ -129,4 +129,32 @@ describe('TraducaoService', () => {
       expect(texto).toBe('Pega a gola, quebra a postura.');
     });
   });
+
+  describe('refazer', () => {
+    it('manda as falas reprovadas com o motivo do juiz e devolve a nova versão', async () => {
+      streamMock.mockReturnValue(
+        respostaDoClaude({
+          falas: [{ id: 1, textoEnCorrigido: 'Then the armbar?', textoPt: 'E aí, armlock?' }],
+        }),
+      );
+      const reprovada = {
+        ...falas[1],
+        textoEnCorrigido: 'Then the armbar?',
+        textoPt: 'Então a chave de braço?',
+      };
+
+      const refeitas = await service.refazer([reprovada], new Map([[1, 'armbar é armlock']]));
+
+      const conteudo = JSON.stringify(streamMock.mock.calls[0][0].messages);
+      expect(conteudo).toContain('Então a chave de braço?');
+      expect(conteudo).toContain('armbar é armlock');
+      expect(refeitas).toEqual([{ ...reprovada, textoPt: 'E aí, armlock?' }]);
+    });
+
+    it('falha explicitamente quando a fala refeita não volta', async () => {
+      streamMock.mockReturnValue(respostaDoClaude({ falas: [] }));
+      const reprovada = { ...falas[1], textoEnCorrigido: 'x', textoPt: 'y' };
+      await expect(service.refazer([reprovada], new Map([[1, 'm']]))).rejects.toThrow(/fala 1/);
+    });
+  });
 });
