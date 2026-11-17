@@ -6,14 +6,14 @@
 
 ## Onde paramos
 
-T1 e T2 feitas: custos (`back/src/custos/`) e trace por job (`back/src/trace/`, AsyncLocalStorage); Claude, transcrição e voz registram no trace corrente.
+T1 e T2 feitas: custos (`back/src/custos/`) e trace por job (`back/src/trace/`, AsyncLocalStorage); Claude, transcrição e voz registram no trace corrente. T3 feita: tradutor no Sonnet 5.5 e juiz no Haiku 5.5, ambos esforço médio.
 
 ## Tarefas
 
 - T1 — feito (`custo.spec.ts` verde, 8 testes)
 - T2 — feito (`trace.spec.ts`, `claude.spec.ts` + specs de tradução/juiz/transcrição/voz; suíte 91 verde)
-- T3 — em andamento
-- T4 — pendente
+- T3 — feito (specs de tradução e juiz conferem modelo/esforço/fallback; suíte 93 verde)
+- T4 — em andamento
 - T5 — pendente
 - T6 — pendente
 - T7 — pendente
@@ -30,7 +30,7 @@ T1 e T2 feitas: custos (`back/src/custos/`) e trace por job (`back/src/trace/`, 
 
 ## Próximo passo
 
-T3: `chamarClaude` recebe `modelo` e `esforco` além do `papel`; tradutor/refazer/encurtar Sonnet 5.5 medium com fallback, juiz Haiku 5.5 medium sem fallback. Ler antes a seção Haiku 5.5 / Sonnet 5.5 de `shared/model-migration.md` da skill claude-api.
+T4: `back/scripts/comparar-modelos.ts <relatorio-opus.json>` com flag `--simulado`; gera `relatorios/comparacao-<data>.md` (EN, PT Opus, PT novo, veredito, tamanho × alvo, custo por chamada e total).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -55,6 +55,7 @@ T3: `chamarClaude` recebe `modelo` e `esforco` além do `papel`; tradutor/refaze
 - T1: tabela da Claude inclui `claude-sonnet-5` (alvo do fallback do Sonnet 5.5); leitura de cache dele estimada em 0,1× (não documentada na skill). Haiku 5.5 escolhe a tabela pelo prompt total (entrada + cache), > 100 mil = tabela longa. Escrita de cache cobrada como TTL 5 min (o dubla não usa cache hoje).
 - T2: `chamarClaude` ganhou um objeto de opções `{ papel }` (a T3 acrescenta modelo e esforço nele). A chamada é registrada no trace antes de checar recusa/corte, porque foi cobrada. Transcrição concluída sem `audio_duration` é erro explícito (o SDK tipa como opcional). Vozes somadas numa linha por etapa (`Trace.somarVoz`); caracteres = `texto.length`.
 - T2: custo usa `resposta.model` (o modelo que de fato respondeu). Se um fallback server-side cair em modelo sem preço, a chamada falha com erro explícito; o custo da parte recusada antes do fallback (`usage.iterations`) não é separado.
+- T3: modelo/esforço/fallback ficam numa tabela por papel dentro de `claude.ts` (`POR_PAPEL`), e não passados por cada serviço como o plano dizia: um lugar só para trocar modelo, e os serviços continuam passando só o papel. Teste antigo que conferia Opus/high foi atualizado para a regra nova (R2).
 
 ## Resultado
 

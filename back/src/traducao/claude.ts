@@ -5,10 +5,18 @@ import { z } from 'zod';
 import { custoClaude } from '../custos/custo';
 import { traceAtual } from '../trace/trace';
 
-const MODELO = 'claude-opus-5-5';
 const logger = new Logger('Claude');
 
 export type Papel = 'traducao' | 'refazer' | 'encurtar' | 'juiz';
+
+// Modelo e esforço de cada papel. O Haiku 5.5 não tem fallback server-side.
+const TRADUTOR = { modelo: 'claude-sonnet-5-5', esforco: 'medium', fallback: true } as const;
+const POR_PAPEL = {
+  traducao: TRADUTOR,
+  refazer: TRADUTOR,
+  encurtar: TRADUTOR,
+  juiz: { modelo: 'claude-haiku-5-5', esforco: 'medium', fallback: false },
+} as const;
 
 // Uma chamada ao Claude com saída estruturada, usada pelo tradutor e pelo juiz.
 // Resposta cortada, recusada ou fora do formato é erro explícito, mas fica
@@ -21,12 +29,15 @@ export async function chamarClaude<T>(
   conteudo: string,
 ): Promise<T> {
   const inicio = Date.now();
+  const { modelo, esforco, fallback } = POR_PAPEL[opcoes.papel];
   const stream = cliente.beta.messages.stream({
-    model: MODELO,
+    model: modelo,
     max_tokens: 64000,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
-    output_config: { effort: 'high', format: betaZodOutputFormat(schema) },
+    ...(fallback && {
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default' as const,
+    }),
+    output_config: { effort: esforco, format: betaZodOutputFormat(schema) },
     system,
     messages: [{ role: 'user', content: conteudo }],
   });

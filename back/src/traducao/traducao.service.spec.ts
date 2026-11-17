@@ -70,8 +70,8 @@ describe('TraducaoService', () => {
 
       expect(streamMock).toHaveBeenCalledTimes(1);
       const pedido = streamMock.mock.calls[0][0];
-      expect(pedido.model).toBe('claude-opus-5-5');
-      expect(pedido.output_config.effort).toBe('high');
+      expect(pedido.model).toBe('claude-sonnet-5-5');
+      expect(pedido.output_config.effort).toBe('medium');
       expect(pedido.fallbacks).toBe('default');
       expect(pedido.betas).toContain('server-side-fallback-2026-07-01');
       // Duração 2,5 s × 14 chars/s = 35 chars de alvo para a fala 0.
@@ -188,5 +188,23 @@ describe('TraducaoService', () => {
     });
 
     expect(trace.chamadas.map((c) => c.papel)).toEqual(['traducao', 'refazer', 'encurtar']);
+  });
+
+  it('refazer e encurtar também usam o Sonnet 5.5 com esforço médio e fallback', async () => {
+    streamMock
+      .mockReturnValueOnce(
+        respostaDoClaude({ falas: [{ id: 1, textoEnCorrigido: 'b', textoPt: 'c' }] }),
+      )
+      .mockReturnValueOnce(respostaDoClaude({ textoPt: 'd' }));
+    const fala = { ...falas[1], textoEnCorrigido: 'b', textoPt: 'x' };
+
+    await service.refazer([fala], new Map([[1, 'm']]));
+    await service.encurtar(fala, 10, 'm');
+
+    for (const [pedido] of streamMock.mock.calls) {
+      expect(pedido.model).toBe('claude-sonnet-5-5');
+      expect(pedido.output_config.effort).toBe('medium');
+      expect(pedido.fallbacks).toBe('default');
+    }
   });
 });
