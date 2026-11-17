@@ -11,7 +11,7 @@ T0 feito (download do YouTube). Voz voltou para vozes prontas da AssemblyAI (sem
 ## Tarefas
 
 - T0 — feito (4 testes verdes; download real de um vídeo público de 19 s em ~3 s, H.264 + AAC em `videos/`)
-- T1 — esperando o dev: ouvir `relatorios/sondagem/aai-{robson,joaquim,cassio,luiz,antonio,nilson,caio,iago}-*.mp3` (rodada 2 de 3) e escolher 2 vozes
+- T1 — feito (dev escolheu `aai-cassio` = voz 1, pessoa que mais fala; `aai-benicio` = voz 2)
 - T2 — pendente
 - T3 — pendente
 - T4 — pendente
@@ -28,7 +28,7 @@ T0 feito (download do YouTube). Voz voltou para vozes prontas da AssemblyAI (sem
 
 ## Próximo passo
 
-Ler o resultado da T1 (2 vozes escolhidas pelo dev). Em paralelo, T2 (Demucs no `back/.venv-py`) precisa de 1 link do YouTube (3–5 min, uma pessoa) baixado com `cd back && npx ts-node scripts/baixar-video.ts <link>`.
+T2: usuário perguntou por que Demucs local com PyTorch em vez de serviço externo; esperar a decisão (local × API externa × sem fundo). Teste e esqueleto do `SeparacaoService` escritos, não commitados; `src/shared/ferramentas-python.ts` extraído do `YoutubeService`.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -60,6 +60,7 @@ Ler o resultado da T1 (2 vozes escolhidas pelo dev). Em paralelo, T2 (Demucs no 
 
 - Usuário (2026-11-17): "usa voz fixa msm mas a do nelson e mt paia ... tipo 2 vozes media nao uma nova ae um parecendo um velho ai pode seguir". Clone descartado de novo; spec R7/R9 e plano (I1, T1, T8) de volta às vozes prontas. Pesquisa de Fish/Inworld/Cartesia acima fica como reserva.
 - Catálogo AssemblyAI: `GET https://tts.us.assemblyai.com/v1/voices?scope=public&limit=100` (paginar por `next_cursor`) lista 4073 vozes públicas com `language` e `tags` (`accent:`, `age:`, `gender:` etc.); 196 em português (190 sotaque brasileiro, 73 meia-idade). Sem `scope` lista só as da conta. Não documentado na página de vozes.
+- decidido (2026-11-17): vozes "cassion e benicio" → `VOZES_PT=aai-cassio,aai-benicio`.
 - Sondagem T1 rodada 2 (2026-11-17, "pode seguir" do usuário): 8 vozes × 5 falas, 3352 caracteres (~US$0,05).
 
 ## Hipóteses descartadas
