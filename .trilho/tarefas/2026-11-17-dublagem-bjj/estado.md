@@ -2,11 +2,11 @@
 
 **Atualizado em:** 2026-11-17
 **Etapa:** execucao
-**Último review:** c491d7f (fase 1, T0–T4) — sem achados ≥ 80
+**Último review:** 2c274a9 (fase 2, T5–T7) — sem achados ≥ 80
 
 ## Onde paramos
 
-Fase 1 fechada. Fase 2: T5, T6 e T7 feitas. Falta o fim de fase: suíte, rodada real de tradução + juiz no vídeo 1, code review.
+Fase 1 fechada. Fase 2: T5, T6 e T7 feitas. Suíte (só as 6 vermelhas preexistentes), lint/typecheck e code review feitos (sem achados). Falta a rodada real de tradução + juiz no vídeo 1, que espera o "pode" do dev.
 
 ## Tarefas
 
@@ -28,7 +28,7 @@ Fase 1 fechada. Fase 2: T5, T6 e T7 feitas. Falta o fim de fase: suíte, rodada 
 
 ## Próximo passo
 
-Fim da fase 2: suíte/lint/typecheck, script da rodada real (transcrever + traduzir + juiz + relatório no vídeo 1; pede o "pode"), code review da fase (base `6138682`), handoff.
+Rodada real da fase 2, com o "pode" do dev (estimativa US$0,30–0,60): `cd back && node --env-file=../.env -r ts-node/register scripts/traduzir-video.ts ../videos/BJJ-Moves-Arm-Bar-From-Guard-by-John-Danaher.mp4`. Registrar tokens/custo e as observações do dev sobre os termos; depois handoff para a fase 3.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
