@@ -36,7 +36,7 @@ Fase 2, T6: `back/src/jobs/` (`JobsService`) — fila em memória, um job por ve
 
 - Acha a Claude cara ("2 dólares em 2 vídeos"); não quer usar OpenAI.
 - Autorizou as duas rodadas pagas da T5 nesta sessão (autorização não vale para rodadas futuras).
-- Ele não sabe os preços da AssemblyAI: não pedir confirmação. Conferir na T16 o total da AssemblyAI do trace contra o uso/cobrança no painel da conta AssemblyAI (além do painel da Anthropic) e corrigir `back/src/custos/precos.ts` se divergir.
+- Decidido: os preços da AssemblyAI ficam os da página oficial (T1). Ele não vai conferir nada no painel da AssemblyAI; não pedir confirmação nem conferência deles.
 
 ## Defeitos
 
@@ -62,7 +62,7 @@ Fase 2, T6: `back/src/jobs/` (`JobsService`) — fila em memória, um job por ve
 
 ## Decisões da execução
 
-- T1: preço da AssemblyAI (assemblyai.com/pricing, 2026-11-17): transcrição $0,28/h = STT-3.7 $0,21 + speaker labels $0,02 + keyterms $0,05; voz $15/milhão de caracteres. Assume o modelo padrão (STT-3.7), pois o código não fixa `speech_model`: conferir `speech_model` na resposta da rodada real. Conferência contra o painel da AssemblyAI fica para a T16.
+- T1: preço da AssemblyAI (assemblyai.com/pricing, 2026-11-17): transcrição $0,28/h = STT-3.7 $0,21 + speaker labels $0,02 + keyterms $0,05; voz $15/milhão de caracteres. Assume o modelo padrão (STT-3.7), pois o código não fixa `speech_model`: conferir `speech_model` na resposta da rodada real.
 - T1: tabela da Claude inclui `claude-sonnet-5` (alvo do fallback do Sonnet 5.5); leitura de cache dele estimada em 0,1× (não documentada na skill). Haiku 5.5 escolhe a tabela pelo prompt total (entrada + cache), > 100 mil = tabela longa. Escrita de cache cobrada como TTL 5 min (o dubla não usa cache hoje).
 - T2: `chamarClaude` ganhou um objeto de opções `{ papel }` (a T3 acrescenta modelo e esforço nele). A chamada é registrada no trace antes de checar recusa/corte, porque foi cobrada. Transcrição concluída sem `audio_duration` é erro explícito (o SDK tipa como opcional). Vozes somadas numa linha por etapa (`Trace.somarVoz`); caracteres = `texto.length`.
 - T2: custo usa `resposta.model` (o modelo que de fato respondeu). Se um fallback server-side cair em modelo sem preço, a chamada falha com erro explícito; o custo da parte recusada antes do fallback (`usage.iterations`) não é separado.
