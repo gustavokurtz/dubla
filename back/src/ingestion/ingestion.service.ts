@@ -7,6 +7,7 @@ import { TraducaoService } from '../traducao/traducao.service';
 import { JuizService } from '../traducao/juiz.service';
 import { revisarComJuiz } from '../traducao/revisar-com-juiz';
 import { VozService } from '../voz/voz.service';
+import { YoutubeService } from '../youtube/youtube.service';
 import { encaixarFalas } from '../encaixe/encaixar-falas';
 import { gravarRelatorio, montarRelatorio } from '../relatorio/relatorio';
 
@@ -21,7 +22,14 @@ export class IngestionService {
     private readonly traducao: TraducaoService,
     private readonly juiz: JuizService,
     private readonly voz: VozService,
+    private readonly youtube: YoutubeService,
   ) {}
+
+  // Baixa o vídeo do YouTube e dubla com o título como nome (R12).
+  async dublarLink(url: string): Promise<Buffer> {
+    const { video, titulo } = await this.youtube.baixar(url);
+    return this.dublar(video, titulo);
+  }
 
   // Dubla o vídeo fala por fala, cada uma no instante da original, e grava o relatório.
   async dublar(video: Buffer, nome: string): Promise<Buffer> {

@@ -6,7 +6,7 @@
 
 ## Onde paramos
 
-Fases 1 e 2 fechadas. Fase 3 em curso: T8 a T11 feitas (pipeline nova ligada ao endpoint, suíte verde). Falta T13 (link do YouTube na tela) para fechar a fase 3.
+Fases 1 e 2 fechadas. Fase 3 em curso: Todas as tarefas da fase 3 feitas (T8–T11, T13). Fim de fase em curso: falta a rodada real paga pelo link (critério da fase) e o code review.
 
 ## Tarefas
 
@@ -23,12 +23,12 @@ Fases 1 e 2 fechadas. Fase 3 em curso: T8 a T11 feitas (pipeline nova ligada ao 
 - T10 — feito (`FfmpegService.montarVideo`; teste real com ffmpeg; I4 verificada)
 - T11 — feito (`IngestionService.dublar`, `encaixe/encaixar-falas.ts`; openai/elevenlabs removidos; suíte 19/19 verde)
 - T12 — pendente
-- T13 — pendente (link do YouTube na tela)
+- T13 — feito (campo `url` no endpoint, `IngestionService.dublarLink`, campo de link no front; 3 testes novos)
 - Entrega — pendente (verificação, push + PR para `master`)
 
 ## Próximo passo
 
-T13 (link do YouTube na tela): `POST /ingestion/dublar` aceita `url` além do arquivo; com `url`, `YoutubeService.baixar` antes (`YoutubeModule` ainda não importado no `IngestionModule`); campo no front. Depois: fim da fase 3 (suíte/tsc/lint, rodada real paga pelo link — pedir o "pode" — e code review).
+Fim da fase 3: (1) code review da fase (base `2c274a9`); (2) rodada real paga do vídeo 1 pelo link (pedir o "pode"; estimativa US$0,50–1,50); (3) handoff.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -85,6 +85,8 @@ T13 (link do YouTube na tela): `POST /ingestion/dublar` aceita `url` além do ar
 
 - T11: laço do encaixe em `encaixe/encaixar-falas.ts` (função com dependências injetadas, padrão do `revisarComJuiz`), não dentro do `IngestionService`. Alvo do encurtar = `chars × espaço / duração medida`. Encurtar é por fala (1 chamada Claude cada); se a rodada real mostrar muitas, agrupar é otimização futura. Transcrição usa o áudio original (mp3), não a voz separada (wav grande; a original já funcionou na fase 2). `FfmpegService.medirDuracao(buffer)` novo; `substituirAudio` removido (sem uso). `orchestratePipelineVideo` virou `dublar(video, nome)`; o nome vem do `originalname` sem extensão. Balde `encurtar` do resumo do relatório continua sempre 0 (as encurtadas aparecem por fala em "encurtada N×"); não mexi para não mudar a T7 sem motivo.
 - `CLAUDE.md` reescrito para a pipeline nova (inglês, como estava); armadilha removida do `projeto.md`.
+
+- T13: link tem preferência sobre arquivo quando os dois vêm; sem nenhum, 400. O relatório usa o título do YouTube como nome. Textos de progresso do front trocados (falavam em Whisper). Front: só typecheck e `vite build`; a verificação visual fica com o dev na rodada real.
 
 ## Resultado
 

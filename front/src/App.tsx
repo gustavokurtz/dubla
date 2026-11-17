@@ -3,10 +3,12 @@ import { useState, useCallback, useEffect, useRef, type DragEvent, type ChangeEv
 const MAX_SIZE = 100 * 1024 * 1024 // 100MB
 
 const STEPS = [
-  'Extraindo áudio...',
-  'Transcrevendo com Whisper...',
+  'Separando voz e fundo...',
+  'Transcrevendo...',
   'Traduzindo para português...',
-  'Gerando dublagem...',
+  'Revisando a tradução...',
+  'Gerando as vozes...',
+  'Encaixando cada fala no tempo...',
   'Montando vídeo final...',
 ]
 
@@ -15,6 +17,7 @@ type Status = 'idle' | 'uploading' | 'done' | 'error'
 function App() {
   const [status, setStatus] = useState<Status>('idle')
   const [file, setFile] = useState<File | null>(null)
+  const [link, setLink] = useState('')
   const [blob, setBlob] = useState<Blob | null>(null)
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(false)
@@ -56,17 +59,14 @@ function App() {
   const reset = () => {
     setStatus('idle')
     setFile(null)
+    setLink('')
     setBlob(null)
     setError('')
   }
 
-  const handleUpload = async () => {
-    if (!file) return
+  const enviar = async (form: FormData) => {
     setStatus('uploading')
     setStepIndex(0)
-
-    const form = new FormData()
-    form.append('video', file)
 
     try {
       const res = await fetch('/api/ingestion/dublar', { method: 'POST', body: form })
@@ -81,6 +81,20 @@ function App() {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
       setStatus('error')
     }
+  }
+
+  const handleUpload = () => {
+    if (!file) return
+    const form = new FormData()
+    form.append('video', file)
+    enviar(form)
+  }
+
+  const handleLink = () => {
+    if (!link.trim()) return
+    const form = new FormData()
+    form.append('url', link.trim())
+    enviar(form)
   }
 
   useEffect(() => {
@@ -147,6 +161,27 @@ function App() {
                   Enviar vídeo
                 </button>
               </div>
+            )}
+
+            <div className="flex items-center gap-3 my-5">
+              <div className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs text-slate-400">ou cole um link do YouTube</span>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+            <input
+              type="url"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full h-11 rounded-xl border border-slate-200 bg-white/80 px-3 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-indigo-400"
+            />
+            {link.trim() && (
+              <button
+                onClick={handleLink}
+                className="w-full h-12 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors mt-3 cursor-pointer"
+              >
+                Dublar link
+              </button>
             )}
           </>
         )}

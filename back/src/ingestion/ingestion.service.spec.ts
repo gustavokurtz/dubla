@@ -6,6 +6,7 @@ import { TranscricaoService } from '../transcricao/transcricao.service';
 import { TraducaoService } from '../traducao/traducao.service';
 import { JuizService } from '../traducao/juiz.service';
 import { VozService } from '../voz/voz.service';
+import { YoutubeService } from '../youtube/youtube.service';
 import { gravarRelatorio, Relatorio } from '../relatorio/relatorio';
 import { Fala, FalaTraduzida } from '../shared/types';
 
@@ -67,6 +68,10 @@ describe('IngestionService', () => {
     sintetizar: jest.fn(),
   };
 
+  const youtube = {
+    baixar: jest.fn(registra('baixar', { video: Buffer.from('video'), titulo: 'Arm Bar' })),
+  };
+
   beforeEach(async () => {
     ordem.length = 0;
     jest.clearAllMocks();
@@ -79,6 +84,7 @@ describe('IngestionService', () => {
         { provide: TraducaoService, useValue: traducao },
         { provide: JuizService, useValue: juiz },
         { provide: VozService, useValue: voz },
+        { provide: YoutubeService, useValue: youtube },
       ],
     }).compile();
     service = modulo.get(IngestionService);
@@ -119,5 +125,16 @@ describe('IngestionService', () => {
       [1, 'pt 1', 'aprovada', 'ok'],
       [2, 'pt 2', 'aprovada', 'ok'],
     ]);
+  });
+
+  it('com link do YouTube, baixa antes e usa o título no relatório', async () => {
+    const resultado = await service.dublarLink('https://www.youtube.com/watch?v=abc');
+
+    expect(youtube.baixar).toHaveBeenCalledWith('https://www.youtube.com/watch?v=abc');
+    expect(ordem[0]).toBe('baixar');
+    expect(ordem[1]).toBe('extrair');
+    expect(resultado.toString()).toBe('video-dublado');
+    const [relatorio] = gravarMock.mock.calls[0] as [Relatorio];
+    expect(relatorio.video).toBe('Arm Bar');
   });
 });

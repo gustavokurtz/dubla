@@ -6,9 +6,17 @@ import { SeparacaoModule } from '../separacao/separacao.module';
 import { TranscricaoModule } from '../transcricao/transcricao.module';
 import { TraducaoModule } from '../traducao/traducao.module';
 import { VozModule } from '../voz/voz.module';
+import { YoutubeModule } from '../youtube/youtube.module';
 
 @Module({
-  imports: [FfmpegModule, SeparacaoModule, TranscricaoModule, TraducaoModule, VozModule],
+  imports: [
+    FfmpegModule,
+    SeparacaoModule,
+    TranscricaoModule,
+    TraducaoModule,
+    VozModule,
+    YoutubeModule,
+  ],
   controllers: [IngestionController],
   providers: [IngestionService],
 })
