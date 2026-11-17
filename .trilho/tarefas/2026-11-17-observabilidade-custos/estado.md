@@ -19,7 +19,7 @@ Fase 1 fechada (T1–T5, review feito): custo medido por chamada (`back/src/cust
 - T7 — feito (specs de ingestão, voz e encaixe; suíte 100 verde)
 - T8 — feito (`jobs.controller.spec.ts`; suíte 106 verde; back de pé: 404 em job inexistente nas 3 rotas, inclusive SSE, 400 sem vídeo, `/ingestion/dublar` some)
 - T9 — feito (`pnpm build` verde; prova visual na T10)
-- T10 — esperando o dev: ver a tela andar no ensaio sem custo (`scripts/servidor-ensaio.ts` + `pnpm dev:front`) e baixar o vídeo
+- T10 — feito (o dev viu a tela andar junto com o log e baixou o vídeo, 2026-11-17)
 - T11 — pendente
 - T12 — pendente
 - T13 — pendente
