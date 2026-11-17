@@ -6,7 +6,7 @@
 
 ## Onde paramos
 
-T1 e T2 feitas: custos (`back/src/custos/`) e trace por job (`back/src/trace/`, AsyncLocalStorage); Claude, transcrição e voz registram no trace corrente. T3 feita: tradutor no Sonnet 5.5 e juiz no Haiku 5.5, ambos esforço médio. T4 feita: `back/scripts/comparar-modelos.ts` (rodado com `--simulado`).
+Fase 1 completa (T1–T5): custo medido por chamada, trace por job, tradutor Sonnet 5.5 high + juiz Haiku 5.5 medium, validado contra o Opus no arm bar (US$ 0,11 por vídeo só de Claude). Falta o code review da fase.
 
 ## Tarefas
 
@@ -14,7 +14,7 @@ T1 e T2 feitas: custos (`back/src/custos/`) e trace por job (`back/src/trace/`, 
 - T2 — feito (`trace.spec.ts`, `claude.spec.ts` + specs de tradução/juiz/transcrição/voz; suíte 91 verde)
 - T3 — feito (specs de tradução e juiz conferem modelo/esforço/fallback; suíte 93 verde)
 - T4 — feito (`--simulado` no relatório do arm bar: 72 falas, refazer exercitado, tabela de custo gerada)
-- T5 — em andamento (rodada 1 de 2 feita, meta não atingida)
+- T5 — feito (rodada 2: meta atingida; `relatorios/comparacao-2026-11-17-20-43.md`)
 - T6 — pendente
 - T7 — pendente
 - T8 — pendente
@@ -30,7 +30,7 @@ T1 e T2 feitas: custos (`back/src/custos/`) e trace por job (`back/src/trace/`, 
 
 ## Próximo passo
 
-T5 rodada 2 (plano B 1): tradutor Sonnet 5.5 em effort `high`, esperando o "pode" do usuário. Se passar, ajustar `POR_PAPEL` e o teste da tradução.
+Code review da fase 1; depois handoff e /clear. Fase 2 começa pela T6 (fila de jobs em memória).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -49,6 +49,8 @@ T5 rodada 2 (plano B 1): tradutor Sonnet 5.5 em effort `high`, esperando o "pode
 
 - **Rodada 1** (2026-11-17, `relatorios/comparacao-2026-11-17-20-31.md`): Sonnet 5.5 medium + Haiku 5.5 medium. Custo medido US$ 0,088 (tradução 0,068; juiz 0,0035; 2 refazer 0,015). Termos e sentido: nenhum erro (o juiz reprovou 2, ambas corrigidas). Pior que o Opus: 16 falas passam de 115% do alvo de caracteres onde o Opus ficava dentro (ex.: #15 53/29, #35 35/24, #19 64/46), muito pela troca de "centro" por "linha central"; e #42 "Deixei o cotovelo dele bem claro" soa errado (Opus: "Coloquei o cotovelo dele claramente"). Meta (≤ 5 piores) não atingida.
 - Hipótese para a rodada 2: o prompt já pede "nunca muito acima do alvo"; o Opus em effort high obedecia, o Sonnet em medium checa menos o tamanho. Teste: plano B 1, tradutor em effort high.
+- **Rodada 2** (2026-11-17, `relatorios/comparacao-2026-11-17-20-43.md`): tradutor Sonnet 5.5 high + juiz Haiku 5.5 medium. Custo US$ 0,111 (tradução 9.108 entrada / 8.939 saída = 0,108; juiz 0,003; nenhuma refeita). 0 erros de termo ou sentido; 4 falas acima de 115% do alvo onde o Opus cabia (#15 35/29, #27 37/29, #41 29/25, #72 18/15, poucos caracteres); #42 "bem claramente" tão estranha quanto a do Opus. Meta atingida → adotado effort high no tradutor. Hipótese da rodada 1 confirmada.
+- Referência de custo do Opus: com os mesmos tokens da rodada 2 daria ~US$ 0,34 (Opus high gera mais saída); a fatura do usuário dizia ~US$ 1 por vídeo.
 
 ## Hipóteses descartadas
 

@@ -23,7 +23,7 @@ Quando o dubla chama a Claude, guarda o modelo, os tokens de entrada e de saída
 
 ### R2 — Tradutor no Sonnet, juiz no Haiku
 
-Quando o dubla traduz, refaz uma fala reprovada ou encurta uma fala que não cabe, usa o Sonnet 5.5 com raciocínio médio. Quando julga, usa o Haiku 5.5.
+Quando o dubla traduz, refaz uma fala reprovada ou encurta uma fala que não cabe, usa o Sonnet 5.5 com raciocínio alto. Quando julga, usa o Haiku 5.5.
 
 - **Exemplo:** no trace, as chamadas de tradução mostram "Sonnet 5.5" e as do juiz mostram "Haiku 5.5".
 - **Por quê:** o Opus com raciocínio alto custa umas 40 vezes mais que o Haiku, e o juiz aprova quase tudo logo de primeira (71 de 72 falas no arm bar) (O1).
@@ -97,6 +97,7 @@ Quando o servidor reinicia com um vídeo dublando, ele volta marcado como "inter
 ## O que ficou decidido
 
 - Tradutor (e encurtar) no Sonnet 5.5, juiz no Haiku 5.5, Postgres no Docker — você, no chat.
+- Tradutor com raciocínio alto, e não médio: com o médio, 16 das 72 falas do arm bar passavam do tempo; com o alto, 4 (plano B combinado, rodada de 17/11).
 - O MP4 dublado fica guardado em disco para baixar pelo histórico — você, no chat.
 - Um vídeo de cada vez, os outros esperam na fila — você, no chat.
 - A validação da troca de modelo é feita por mim, comparando com o arm bar que o Opus já dublou — você, no chat.

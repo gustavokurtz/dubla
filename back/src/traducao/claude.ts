@@ -10,7 +10,9 @@ const logger = new Logger('Claude');
 export type Papel = 'traducao' | 'refazer' | 'encurtar' | 'juiz';
 
 // Modelo e esforço de cada papel. O Haiku 5.5 não tem fallback server-side.
-const TRADUTOR = { modelo: 'claude-sonnet-5-5', esforco: 'medium', fallback: true } as const;
+// Tradutor em esforço alto: em médio o Sonnet passava do alvo de caracteres
+// em 16 de 72 falas do arm bar; em alto, 4 (T5).
+const TRADUTOR = { modelo: 'claude-sonnet-5-5', esforco: 'high', fallback: true } as const;
 const POR_PAPEL = {
   traducao: TRADUTOR,
   refazer: TRADUTOR,

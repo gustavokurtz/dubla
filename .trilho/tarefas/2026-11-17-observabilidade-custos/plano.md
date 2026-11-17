@@ -23,7 +23,7 @@
 
 | Questão | Decisão | Porquê |
 |---|---|---|
-| Modelos | tradutor/refazer/encurtar `claude-sonnet-5-5` effort `medium`; juiz `claude-haiku-5-5` effort `medium` (usuário) | custo (spec O1) |
+| Modelos | tradutor/refazer/encurtar `claude-sonnet-5-5` effort `high` (era `medium`; mudou pelo plano B 1 da T5); juiz `claude-haiku-5-5` effort `medium` (usuário) | custo (spec O1) |
 | Validação | eu comparo com o relatório do Opus do arm bar, reaproveitando o `textoEn` salvo (usuário) | sem custo de AssemblyAI; mesma entrada que o Opus teve |
 | MP4 guardado | em disco, `dublados/<jobId>.mp4` na raiz, no `.gitignore` (usuário + pasta decidida por mim) | baixar pelo histórico (R6) |
 | Simultâneo | fila, um vídeo de cada vez (usuário) | limite de 50 vozes/min da conta |
