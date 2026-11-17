@@ -12,8 +12,8 @@ Fases 1 e 2 fechadas. A fase 1 entregou o custo medido por chamada e a troca de 
 
 - T1–T10 — feito (suíte 106 verde, lint, typecheck e `pnpm build` verdes em 0711d0d)
 - T11 — feito (docker compose v5.1.4 respondeu no WSL em 2026-11-17; `docker ps` ok)
-- T12 — em andamento
-- T13 — pendente
+- T12 — feito (migration `inicio` aplicada em localhost:5433; `\dt` mostra Job, Etapa, Chamada)
+- T13 — em andamento
 - T14 — pendente
 - T15 — pendente
 - T16 — pendente
@@ -21,7 +21,7 @@ Fases 1 e 2 fechadas. A fase 1 entregou o custo medido por chamada e a troca de 
 
 ## Próximo passo
 
-Fase 3, T11: tentar `docker compose version` uma vez. Se falhar (em 2026-11-17 o `docker` não existia no WSL), marcar a T11 `esperando o dev: ativar Docker Desktop → Settings → Resources → WSL integration para esta distro e colar a saída de docker compose version` e commitar. Enquanto espera, adiantar o que não depende do Docker na T12: `docker-compose.yml` e o esquema Prisma. Antes, consultar o context7 sobre Prisma, porque a config mudou nas versões recentes. Migration só contra `localhost:5433`, e só depois de conferir a `DATABASE_URL`.
+T13: gravar job, etapas e chamadas no banco a partir de `trace.assinar`/`jobs.assinar`; na subida, `dublando`/`na fila` viram `interrompido`. Teste `jobs.repositorio.spec.ts` com Prisma simulado. O ouvinte que grava não pode lançar (ver aprendizados).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -43,6 +43,8 @@ Fase 3, T11: tentar `docker compose version` uma vez. Se falhar (em 2026-11-17 o
 - O `pgrep -f <padrão>` também casa com o shell do Bash quando o texto do comando contém o nome do processo (ex.: um heredoc que cita `servidor-ensaio`). Matar o processo num comando separado.
 - T5: o Opus, com os mesmos tokens, custaria ~US$ 0,34 por vídeo; a fatura do usuário dizia ~US$ 1. O Sonnet medium estourava o alvo de caracteres em 16 falas, e em effort high só 4: por isso o tradutor ficou em high (`relatorios/comparacao-2026-11-17-20-43.md`).
 - Ponto em aberto abaixo de 80 no review: se um ouvinte do `JobsService.avisar()` lançar erro, o `rodando` fica `true` e a fila para. Hoje nenhum lança; na T13, o ouvinte que grava no banco não pode lançar (tratar o erro dentro dele).
+
+- T12: Prisma 7.10.1 (o `latest` do npm é RC da 8). Config em `back/prisma.config.ts` (lê `../.env` com `process.loadEnvFile`), fora do `nest build` (senão o dist vira `dist/src/main.js`). Cliente gerado em `back/src/generated/prisma` (fora do git e do lint), CJS, gerado no `postinstall`. `pnpm-workspace.yaml` libera os scripts de instalação do Prisma (`onlyBuiltDependencies`). Postgres: `docker compose up -d` na raiz, usuário/senha/banco `dubla`, `DATABASE_URL=postgresql://dubla:dubla@localhost:5433/dubla` no `.env`. Etapa e Chamada têm chave (jobId, ordem).
 
 ## Hipóteses descartadas
 

@@ -68,3 +68,6 @@ dublados/
 
 # Venv das ferramentas Python (yt-dlp, demucs)
 back/.venv-py/
+
+# Cliente Prisma gerado (prisma generate, roda no postinstall)
+back/src/generated/

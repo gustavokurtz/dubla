@@ -50,7 +50,7 @@ Conventional Commits em inglês, minúsculo, sem escopo, sem ponto final. Exempl
 
 ## Áreas sensíveis
 
-- Sem banco de dados.
+- Postgres local do histórico: `docker compose up -d` na raiz (porta 5433). Migrations (`cd back && npx prisma migrate dev`) só com `DATABASE_URL` em `localhost:5433` (2026-11-17).
 - Serviços externos pagos: AssemblyAI (`ASSEMBLYAI_API_KEY`), Anthropic (`ANTHROPIC_API_KEY`). Avisar antes de qualquer rodada real.
 
 ## Armadilhas

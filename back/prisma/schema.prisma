@@ -1,0 +1,61 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Uma dublagem: da fila até o MP4 pronto, a falha ou a interrupção.
+model Job {
+  id          String    @id
+  nome        String
+  origem      String // "arquivo" ou "link"
+  situacao    String // na fila, dublando, pronto, falhou, interrompido
+  criadoEm    DateTime
+  iniciadoEm  DateTime?
+  terminadoEm DateTime?
+  erro        String?
+  etapaDoErro String?
+  arquivo     String? // caminho do MP4 dublado
+  custoTotal  Float     @default(0) // US$
+  etapas      Etapa[]
+  chamadas    Chamada[]
+}
+
+model Etapa {
+  jobId  String
+  ordem  Int
+  nome   String
+  inicio DateTime
+  fim    DateTime?
+  feito  Int?
+  total  Int?
+  erro   String?
+  custo  Float     @default(0) // US$
+  job    Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, ordem])
+}
+
+// Chamada paga. As vozes vêm somadas numa linha por etapa (quantidade).
+model Chamada {
+  jobId      String
+  ordem      Int
+  etapa      Int? // ordem da etapa em que aconteceu
+  servico    String // claude, assemblyai-transcricao, assemblyai-voz
+  papel      String?
+  modelo     String?
+  entrada    Int? // tokens
+  saida      Int? // tokens
+  segundos   Float? // áudio transcrito
+  caracteres Int?
+  quantidade Int?
+  custo      Float // US$
+  duracaoMs  Int
+  job        Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, ordem])
+}
