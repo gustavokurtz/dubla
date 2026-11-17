@@ -4,6 +4,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { IngestionService } from '../ingestion/ingestion.service';
 import { rodarNoTrace, Trace } from '../trace/trace';
+import { JobsRepositorio } from './jobs.repositorio';
 
 export const PASTA_DUBLADOS = 'PASTA_DUBLADOS';
 
@@ -14,6 +15,7 @@ export type Situacao = 'na fila' | 'dublando' | 'pronto' | 'falhou';
 export interface Job {
   id: string;
   nome: string;
+  origem: 'arquivo' | 'link';
   situacao: Situacao;
   trace: Trace;
   criadoEm: Date;
@@ -35,15 +37,26 @@ export class JobsService {
 
   constructor(
     private readonly ingestao: IngestionService,
+    private readonly repositorio: JobsRepositorio,
     @Inject(PASTA_DUBLADOS) private readonly pasta: string,
   ) {}
 
   criar(entrada: Entrada): string {
     const id = randomUUID();
-    const nome = 'url' in entrada ? entrada.url : entrada.nome;
-    this.jobs.set(id, { id, nome, situacao: 'na fila', trace: new Trace(), criadoEm: new Date() });
+    const link = 'url' in entrada;
+    const job: Job = {
+      id,
+      nome: link ? entrada.url : entrada.nome,
+      origem: link ? 'link' : 'arquivo',
+      situacao: 'na fila',
+      trace: new Trace(),
+      criadoEm: new Date(),
+    };
+    this.jobs.set(id, job);
+    // Cada etapa, fala e chamada do trace vai para o banco (R8).
+    job.trace.assinar(() => this.repositorio.agendar(job));
     this.fila.push({ id, entrada });
-    this.avisar();
+    this.mudou(job);
     void this.processar();
     return id;
   }
@@ -66,7 +79,8 @@ export class JobsService {
     return () => this.ouvintes.delete(ouvinte);
   }
 
-  private avisar(): void {
+  private mudou(job: Job): void {
+    this.repositorio.agendar(job);
     for (const ouvinte of this.ouvintes) ouvinte();
   }
 
@@ -82,7 +96,7 @@ export class JobsService {
   private async dublar(job: Job, entrada: Entrada): Promise<void> {
     job.situacao = 'dublando';
     job.iniciadoEm = new Date();
-    this.avisar();
+    this.mudou(job);
     try {
       const video = await rodarNoTrace(job.trace, () =>
         'url' in entrada
@@ -108,7 +122,7 @@ export class JobsService {
       );
     } finally {
       job.terminadoEm = new Date();
-      this.avisar();
+      this.mudou(job);
     }
   }
 }

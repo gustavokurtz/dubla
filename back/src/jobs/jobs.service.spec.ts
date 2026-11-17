@@ -3,6 +3,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { IngestionService } from '../ingestion/ingestion.service';
 import { traceAtual } from '../trace/trace';
+import { JobsRepositorio } from './jobs.repositorio';
 import { JobsService } from './jobs.service';
 
 // Dublagem simulada: cada chamada fica pendente até o teste resolver ou rejeitar.
@@ -27,6 +28,8 @@ async function esperar(condicao: () => boolean): Promise<void> {
   expect(condicao()).toBe(true);
 }
 
+const repositorio = { agendar: jest.fn() } as unknown as JobsRepositorio;
+
 describe('JobsService', () => {
   let pasta: string;
 
@@ -37,7 +40,7 @@ describe('JobsService', () => {
 
   it('dubla um vídeo de cada vez, na ordem, com a posição na fila', async () => {
     const { ingestao, pendentes, dublar } = ingestaoSimulada();
-    const jobs = new JobsService(ingestao, pasta);
+    const jobs = new JobsService(ingestao, repositorio, pasta);
 
     const a = jobs.criar({ video: Buffer.from('a'), nome: 'arm bar' });
     const b = jobs.criar({ video: Buffer.from('b'), nome: 'triangle' });
@@ -62,7 +65,7 @@ describe('JobsService', () => {
 
   it('marca a falha com a etapa e a mensagem, guarda o gasto e segue a fila', async () => {
     const { ingestao, pendentes } = ingestaoSimulada();
-    const jobs = new JobsService(ingestao, pasta);
+    const jobs = new JobsService(ingestao, repositorio, pasta);
 
     const a = jobs.criar({ url: 'https://youtu.be/x' });
     const b = jobs.criar({ video: Buffer.from('b'), nome: 'triangle' });
@@ -84,7 +87,7 @@ describe('JobsService', () => {
   });
 
   it('job inexistente não tem estado nem posição', () => {
-    const jobs = new JobsService(ingestaoSimulada().ingestao, pasta);
+    const jobs = new JobsService(ingestaoSimulada().ingestao, repositorio, pasta);
     expect(jobs.obter('nao-existe')).toBeUndefined();
     expect(jobs.posicao('nao-existe')).toBeUndefined();
   });
@@ -94,7 +97,7 @@ describe('JobsService avisa quem assina', () => {
   it('a cada mudança de situação de qualquer job', async () => {
     const pasta = await mkdtemp(join(tmpdir(), 'dublados-'));
     const { ingestao, pendentes } = ingestaoSimulada();
-    const jobs = new JobsService(ingestao, pasta);
+    const jobs = new JobsService(ingestao, repositorio, pasta);
     const aviso = jest.fn();
     const cancelar = jobs.assinar(aviso);
 
@@ -104,6 +107,26 @@ describe('JobsService avisa quem assina', () => {
     pendentes[0].resolver(Buffer.from('mp4'));
     await esperar(() => aviso.mock.calls.length === 3); // pronto
     cancelar();
+    await rm(pasta, { recursive: true, force: true });
+  });
+});
+
+describe('JobsService grava no banco', () => {
+  it('a cada mudança de situação e a cada evento do trace, com o job inteiro', async () => {
+    const pasta = await mkdtemp(join(tmpdir(), 'dublados-'));
+    const { ingestao, pendentes } = ingestaoSimulada();
+    const agendar = jest.fn();
+    const jobs = new JobsService(ingestao, { agendar } as unknown as JobsRepositorio, pasta);
+    const situacoes = () => agendar.mock.calls.map(([job]: [{ situacao: string }]) => job.situacao);
+
+    const id = jobs.criar({ url: 'https://youtu.be/x' });
+    expect(agendar).toHaveBeenLastCalledWith(expect.objectContaining({ id, origem: 'link' }));
+    await esperar(() => pendentes.length === 1);
+    // na fila, dublando, 2 etapas e 1 chamada do trace simulado
+    expect(agendar).toHaveBeenCalledTimes(5);
+    pendentes[0].resolver(Buffer.from('mp4'));
+    await esperar(() => situacoes().at(-1) === 'pronto');
+    expect(agendar.mock.calls.every(([job]: [{ id: string }]) => job.id === id)).toBe(true);
     await rm(pasta, { recursive: true, force: true });
   });
 });

@@ -13,15 +13,15 @@ Fases 1 e 2 fechadas. A fase 1 entregou o custo medido por chamada e a troca de 
 - T1–T10 — feito (suíte 106 verde, lint, typecheck e `pnpm build` verdes em 0711d0d)
 - T11 — feito (docker compose v5.1.4 respondeu no WSL em 2026-11-17; `docker ps` ok)
 - T12 — feito (migration `inicio` aplicada em localhost:5433; `\dt` mostra Job, Etapa, Chamada)
-- T13 — em andamento
-- T14 — pendente
+- T13 — feito (suíte 112 verde; ensaio contra o Postgres local: dublagem pronta com 7 etapas e 72/72 falas gravadas; back derrubado no meio → `interrompido` com as 2 etapas feitas)
+- T14 — em andamento
 - T15 — pendente
 - T16 — pendente
 - Entrega — pendente (verificação, push + PR para master)
 
 ## Próximo passo
 
-T13: gravar job, etapas e chamadas no banco a partir de `trace.assinar`/`jobs.assinar`; na subida, `dublando`/`na fila` viram `interrompido`. Teste `jobs.repositorio.spec.ts` com Prisma simulado. O ouvinte que grava não pode lançar (ver aprendizados).
+T14: `GET /jobs` (lista do banco, mais recente primeiro, custo total e duração); `GET /jobs/:id` lê do banco quando o job não está na memória, no mesmo formato de `JobsController.estado`; `GET /jobs/:id/video` pelo caminho gravado (404 se o arquivo sumiu). Specs com repositório simulado.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -36,6 +36,8 @@ T13: gravar job, etapas e chamadas no banco a partir de `trace.assinar`/`jobs.as
 
 ## Aprendizados
 
+- O servidor de ensaio sobe o `AppModule` inteiro, então agora também grava no histórico (com custo 0 e sem chamadas, porque os simulados não registram). Precisa do Postgres de pé (`docker compose up -d`).
+
 - O `Trace` (`back/src/trace/trace.ts`) emite os eventos `etapa`, `progresso` e `chamada`, e o SSE repassa o estado inteiro do job a cada um. A T13 persiste a partir dessas mesmas assinaturas: `trace.assinar` e `jobs.assinar`. O segundo avisa cada mudança de situação de qualquer job.
 - O estado que a tela e o SSE usam é montado em `JobsController.estado` (`back/src/jobs/jobs.controller.ts`). O `GET /jobs/:id` da T14 tem que manter esse formato, porque o front (`EstadoJob` em `front/src/App.tsx`) depende dele.
 - Ensaio sem custo pela tela: `cd back && node --env-file=../.env -r ts-node/register scripts/servidor-ensaio.ts b9ead036-b0c7-4bb4-92a3-0d8795ee0381 ../relatorios/2026-11-17-bjj-moves-arm-bar-from-guard-by-john-danaher.json` + `pnpm dev:front`. Na tela, mandar `videos/BJJ-Moves-Arm-Bar-From-Guard-by-John-Danaher.mp4`; link não serve. A voz simulada é um tom de 300 Hz (o "chiado"), e o custo fica em 0.
@@ -45,6 +47,9 @@ T13: gravar job, etapas e chamadas no banco a partir de `trace.assinar`/`jobs.as
 - Ponto em aberto abaixo de 80 no review: se um ouvinte do `JobsService.avisar()` lançar erro, o `rodando` fica `true` e a fila para. Hoje nenhum lança; na T13, o ouvinte que grava no banco não pode lançar (tratar o erro dentro dele).
 
 - T12: Prisma 7.10.1 (o `latest` do npm é RC da 8). Config em `back/prisma.config.ts` (lê `../.env` com `process.loadEnvFile`), fora do `nest build` (senão o dist vira `dist/src/main.js`). Cliente gerado em `back/src/generated/prisma` (fora do git e do lint), CJS, gerado no `postinstall`. `pnpm-workspace.yaml` libera os scripts de instalação do Prisma (`onlyBuiltDependencies`). Postgres: `docker compose up -d` na raiz, usuário/senha/banco `dubla`, `DATABASE_URL=postgresql://dubla:dubla@localhost:5433/dubla` no `.env`. Etapa e Chamada têm chave (jobId, ordem).
+
+- T13: `JobsRepositorio` (`back/src/jobs/jobs.repositorio.ts`) grava o retrato inteiro do job (upsert do job + apaga e recria etapas e chamadas, numa transação) a cada aviso. Os avisos passam por uma cadeia de promessas única: enquanto um job já espera na cadeia, os avisos seguintes dele se juntam (ele lê o job na hora de gravar). Erro de gravação vira log e não lança, o que fecha o ponto em aberto do `avisar()`. `onModuleInit` marca `na fila`/`dublando` como `interrompido`. `PrismaService` em `back/src/banco/`. O `Job` em memória ganhou `origem` (`arquivo`/`link`).
+- T13: o gerador do Prisma usa `importFileExtension = ""`: com `.js` nos imports, o Jest e o ts-node dos scripts não achavam os arquivos do cliente gerado.
 
 ## Hipóteses descartadas
 

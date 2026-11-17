@@ -10,6 +10,7 @@ function job(parcial: Partial<Job> = {}): Job {
   return {
     id: 'j1',
     nome: 'aula',
+    origem: 'arquivo',
     situacao: 'dublando',
     trace: new Trace(),
     criadoEm: new Date(),
