@@ -89,3 +89,21 @@ describe('JobsService', () => {
     expect(jobs.posicao('nao-existe')).toBeUndefined();
   });
 });
+
+describe('JobsService avisa quem assina', () => {
+  it('a cada mudança de situação de qualquer job', async () => {
+    const pasta = await mkdtemp(join(tmpdir(), 'dublados-'));
+    const { ingestao, pendentes } = ingestaoSimulada();
+    const jobs = new JobsService(ingestao, pasta);
+    const aviso = jest.fn();
+    const cancelar = jobs.assinar(aviso);
+
+    jobs.criar({ video: Buffer.from('a'), nome: 'a' });
+    await esperar(() => pendentes.length === 1);
+    expect(aviso).toHaveBeenCalledTimes(2); // na fila, dublando
+    pendentes[0].resolver(Buffer.from('mp4'));
+    await esperar(() => aviso.mock.calls.length === 3); // pronto
+    cancelar();
+    await rm(pasta, { recursive: true, force: true });
+  });
+});

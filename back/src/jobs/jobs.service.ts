@@ -31,6 +31,7 @@ export class JobsService {
   private readonly jobs = new Map<string, Job>();
   private readonly fila: { id: string; entrada: Entrada }[] = [];
   private rodando = false;
+  private readonly ouvintes = new Set<() => void>();
 
   constructor(
     private readonly ingestao: IngestionService,
@@ -42,6 +43,7 @@ export class JobsService {
     const nome = 'url' in entrada ? entrada.url : entrada.nome;
     this.jobs.set(id, { id, nome, situacao: 'na fila', trace: new Trace(), criadoEm: new Date() });
     this.fila.push({ id, entrada });
+    this.avisar();
     void this.processar();
     return id;
   }
@@ -58,6 +60,16 @@ export class JobsService {
     return this.fila.findIndex((f) => f.id === id) + (this.rodando ? 1 : 0);
   }
 
+  // Avisa a cada mudança de situação de qualquer job (ela muda a posição dos outros na fila).
+  assinar(ouvinte: () => void): () => void {
+    this.ouvintes.add(ouvinte);
+    return () => this.ouvintes.delete(ouvinte);
+  }
+
+  private avisar(): void {
+    for (const ouvinte of this.ouvintes) ouvinte();
+  }
+
   private async processar(): Promise<void> {
     if (this.rodando) return;
     this.rodando = true;
@@ -70,6 +82,7 @@ export class JobsService {
   private async dublar(job: Job, entrada: Entrada): Promise<void> {
     job.situacao = 'dublando';
     job.iniciadoEm = new Date();
+    this.avisar();
     try {
       const video = await rodarNoTrace(job.trace, () =>
         'url' in entrada
@@ -95,6 +108,7 @@ export class JobsService {
       );
     } finally {
       job.terminadoEm = new Date();
+      this.avisar();
     }
   }
 }

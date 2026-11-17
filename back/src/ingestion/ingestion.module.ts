@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { IngestionService } from './ingestion.service';
-import { IngestionController } from './ingestion.controller';
 import { FfmpegModule } from '../ffmpeg/ffmpeg.module';
 import { SeparacaoModule } from '../separacao/separacao.module';
 import { TranscricaoModule } from '../transcricao/transcricao.module';
@@ -17,7 +16,6 @@ import { YoutubeModule } from '../youtube/youtube.module';
     VozModule,
     YoutubeModule,
   ],
-  controllers: [IngestionController],
   providers: [IngestionService],
   exports: [IngestionService],
 })
