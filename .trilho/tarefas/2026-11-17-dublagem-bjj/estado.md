@@ -13,7 +13,7 @@ T0 feito (download do YouTube). Voz voltou para vozes prontas da AssemblyAI (sem
 - T0 — feito (4 testes verdes; download real de um vídeo público de 19 s em ~3 s, H.264 + AAC em `videos/`)
 - T1 — feito (dev escolheu `aai-cassio` = voz 1, pessoa que mais fala; `aai-benicio` = voz 2)
 - T2 — esperando o dev: ouvir `relatorios/separacao/{audio.mp3,voz.wav,fundo.wav}` (fundo sem voz?); medir tempo no vídeo real de 3–5 min (I2)
-- T3 — em andamento
+- T3 — feito (97 termos + guia do tatame em `back/src/traducao/guia-bjj.ts`; teste do limite da AssemblyAI verde; leitura do dev fica para o fim da fase 1)
 - T4 — pendente
 - T5 — pendente
 - T6 — pendente
@@ -28,7 +28,7 @@ T0 feito (download do YouTube). Voz voltou para vozes prontas da AssemblyAI (sem
 
 ## Próximo passo
 
-Ler o resultado da T2 (dev ouve o fundo). Seguir com T3 (guia BJJ) e T4 (transcrição), que não dependem disso. Ainda falta o link do vídeo real (3–5 min, uma pessoa) para medir I2 e para a fase 3.
+T4: transcrição AssemblyAI (consultar no Context7 o endpoint de pré-gravado: speaker_labels, words com tempo, keyterms_prompt, modelo) + `cortarEmFalas`. T2 ainda espera o dev ouvir `relatorios/separacao/`. Falta o link do vídeo real (3–5 min, uma pessoa).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -74,6 +74,7 @@ Ler o resultado da T2 (dev ouve o fundo). Seguir com T3 (guia BJJ) e T4 (transcr
 
 ## Decisões da execução
 
+- T3: lista de termos com 97 itens, não ~150: o `keyterms_prompt` da AssemblyAI aceita no máximo 100 termos / 8000 caracteres (400 acima disso), e a doc recomenda não incluir palavras comuns (guard, mount). Teste trava o limite.
 - T2: `executar()` e `pythonDasFerramentas()` em `src/shared/ferramentas-python.ts`, usados por `YoutubeService` e `SeparacaoService` (mesmo venv, mesmo jeito de chamar).
 - T0: `YoutubeService.baixar` devolve `{ video: Buffer, titulo }` (não caminho de arquivo, como dizia o plano), seguindo o padrão em memória da pipeline; o script grava em `videos/`. Formato preferido H.264 (`vcodec^=avc1`), porque o vídeo final copia o codec e AV1 não abre em todo player. `baixar-video.ts` roda com `ts-node` (o serviço tem decorators/parameter properties, que o strip-types do Node não aceita).
 - Venv `back/.venv-py` criado com `uv` (`uv venv --python 3.12`; `uv pip install --python .venv-py/bin/python ...`): o sistema não tem `python3.12-venv`.
