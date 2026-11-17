@@ -54,3 +54,4 @@ Conventional Commits em inglês, minúsculo, sem escopo, sem ponto final. Exempl
 ## Armadilhas
 
 - `CLAUDE.md` descreve uma pipeline por segmentos com ElevenLabs que não é a que roda: em 2026-11-17 a pipeline real usava Whisper texto corrido + TTS da OpenAI num bloco só. Confie no código, não no `CLAUDE.md`, até ele ser atualizado.
+- Ferramentas Python (yt-dlp, demucs) ficam em `back/.venv-py`, criado com `uv` (`~/.local/bin/uv`): `python3 -m venv` falha porque o sistema não tem `python3.12-venv` (2026-11-17).

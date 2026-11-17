@@ -6,11 +6,11 @@
 
 ## Onde paramos
 
-Planejamento fechado: spec, plano e `.trilho/projeto.md` (trilho-init) commitados na `feat/dublagem-bjj`. Nada de código ainda.
+Voz mudou para clone por API de outro provedor (spec R7/R9) e entrou o download do YouTube (R12, T0 feito). Sondagem das vozes prontas da AssemblyAI feita (comparação). Próximo: sondagem do clone (T1).
 
 ## Tarefas
 
-- T0 — pendente (novo: baixar do YouTube)
+- T0 — feito (4 testes verdes; download real de um vídeo público de 19 s em ~3 s, H.264 + AAC em `videos/`)
 - T1 — pendente (refeita: sondagem do clone em outro provedor; rodada das vozes prontas já feita, fica como comparação)
 - T2 — pendente
 - T3 — pendente
@@ -28,7 +28,7 @@ Planejamento fechado: spec, plano e `.trilho/projeto.md` (trilho-init) commitado
 
 ## Próximo passo
 
-T0: venv `back/.venv-py` com `yt-dlp`, `YoutubeService` + `back/scripts/baixar-video.mts`; pedir ao dev o link de 1 vídeo do YouTube (3–5 min, uma pessoa). Depois T1: confirmar na doc oficial Cartesia/Fish Audio/Inworld e escrever `sondagem-clone.mts` (rodar só com o "pode").
+T1: pedir ao dev o link de 1 vídeo do YouTube (3–5 min, uma pessoa) e baixar com `cd back && npx ts-node scripts/baixar-video.ts <link>`; confirmar na doc oficial Cartesia/Fish Audio/Inworld (clone por API, PT-BR, preço); escrever `back/scripts/sondagem-clone.mts`; rodar só com o "pode" e as chaves dos 2 provedores no `.env`.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -58,6 +58,8 @@ T0: venv `back/.venv-py` com `yt-dlp`, `YoutubeService` + `back/scripts/baixar-v
 
 ## Decisões da execução
 
+- T0: `YoutubeService.baixar` devolve `{ video: Buffer, titulo }` (não caminho de arquivo, como dizia o plano), seguindo o padrão em memória da pipeline; o script grava em `videos/`. Formato preferido H.264 (`vcodec^=avc1`), porque o vídeo final copia o codec e AV1 não abre em todo player. `baixar-video.ts` roda com `ts-node` (o serviço tem decorators/parameter properties, que o strip-types do Node não aceita).
+- Venv `back/.venv-py` criado com `uv` (`uv venv --python 3.12`; `uv pip install --python .venv-py/bin/python ...`): o sistema não tem `python3.12-venv`.
 - Scripts em `back/scripts/*.mts`, rodados com TypeScript nativo do Node 22 (`--experimental-strip-types`) + `--env-file`, sem ts-node/dotenv; `scripts` excluído do `tsconfig.build.json` para o `nest build` não mudar o layout do `dist`. `relatorios/` no `.gitignore` da raiz.
 
 ## Resultado
