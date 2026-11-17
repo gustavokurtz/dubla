@@ -12,7 +12,7 @@ T0 feito (download do YouTube). Voz voltou para vozes prontas da AssemblyAI (sem
 
 - T0 — feito (4 testes verdes; download real de um vídeo público de 19 s em ~3 s, H.264 + AAC em `videos/`)
 - T1 — feito (dev escolheu `aai-cassio` = voz 1, pessoa que mais fala; `aai-benicio` = voz 2)
-- T2 — pendente
+- T2 — esperando o dev: ouvir `relatorios/separacao/{audio.mp3,voz.wav,fundo.wav}` (fundo sem voz?); medir tempo no vídeo real de 3–5 min (I2)
 - T3 — pendente
 - T4 — pendente
 - T5 — pendente
@@ -28,7 +28,7 @@ T0 feito (download do YouTube). Voz voltou para vozes prontas da AssemblyAI (sem
 
 ## Próximo passo
 
-T2: usuário perguntou por que Demucs local com PyTorch em vez de serviço externo; esperar a decisão (local × API externa × sem fundo). Teste e esqueleto do `SeparacaoService` escritos, não commitados; `src/shared/ferramentas-python.ts` extraído do `YoutubeService`.
+Ler o resultado da T2 (dev ouve o fundo). Seguir com T3 (guia BJJ) e T4 (transcrição), que não dependem disso. Ainda falta o link do vídeo real (3–5 min, uma pessoa) para medir I2 e para a fase 3.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -63,12 +63,17 @@ T2: usuário perguntou por que Demucs local com PyTorch em vez de serviço exter
 - decidido (2026-11-17): vozes "cassion e benicio" → `VOZES_PT=aai-cassio,aai-benicio`.
 - Sondagem T1 rodada 2 (2026-11-17, "pode seguir" do usuário): 8 vozes × 5 falas, 3352 caracteres (~US$0,05).
 
+- decidido (2026-11-17): separação com Demucs local ("vai de 1 local"), depois de ver a opção Replicate (~US$0,015–0,02/vídeo, preço não confirmado) e a de ficar sem fundo.
+- Venv `back/.venv-py` com torch 2.11.0+cu128 + demucs + soundfile: 6,7 GB; CUDA ok na RTX 4050.
+- Demucs (htdemucs, `--two-stems=vocals`) em "Me at the zoo" (19 s): 9,8 s incluindo carregar o modelo, VRAM 1,5 → 2,4 GB. Volumes médios: original −24,4 dB, voz −25,0 dB, fundo −19,1 dB (vídeo com vento/ambiente forte). Qualidade só se confere ouvindo.
+
 ## Hipóteses descartadas
 
 - nenhuma
 
 ## Decisões da execução
 
+- T2: `executar()` e `pythonDasFerramentas()` em `src/shared/ferramentas-python.ts`, usados por `YoutubeService` e `SeparacaoService` (mesmo venv, mesmo jeito de chamar).
 - T0: `YoutubeService.baixar` devolve `{ video: Buffer, titulo }` (não caminho de arquivo, como dizia o plano), seguindo o padrão em memória da pipeline; o script grava em `videos/`. Formato preferido H.264 (`vcodec^=avc1`), porque o vídeo final copia o codec e AV1 não abre em todo player. `baixar-video.ts` roda com `ts-node` (o serviço tem decorators/parameter properties, que o strip-types do Node não aceita).
 - Venv `back/.venv-py` criado com `uv` (`uv venv --python 3.12`; `uv pip install --python .venv-py/bin/python ...`): o sistema não tem `python3.12-venv`.
 - Scripts em `back/scripts/*.mts`, rodados com TypeScript nativo do Node 22 (`--experimental-strip-types`) + `--env-file`, sem ts-node/dotenv; `scripts` excluído do `tsconfig.build.json` para o `nest build` não mudar o layout do `dist`. `relatorios/` no `.gitignore` da raiz.

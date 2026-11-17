@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { execFile } from 'child_process';
 import { mkdtemp, readFile, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { executar, pythonDasFerramentas } from '../shared/ferramentas-python';
 
 const HOSTS_YOUTUBE = ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be'];
 
@@ -15,14 +15,12 @@ export class YoutubeService {
 
   async baixar(url: string): Promise<{ video: Buffer; titulo: string }> {
     this.validarLink(url);
-    const python =
-      this.config.get<string>('FERRAMENTAS_PYTHON') ??
-      join(process.cwd(), '.venv-py', 'bin', 'python');
+    const python = pythonDasFerramentas(this.config);
     const dir = await mkdtemp(join(tmpdir(), 'dubla-yt-'));
 
     try {
       this.logger.log(`Baixando do YouTube: ${url}`);
-      const stdout = await this.rodar(python, [
+      const stdout = await executar('yt-dlp', python, [
         '-m',
         'yt_dlp',
         '-f',
@@ -55,14 +53,5 @@ export class YoutubeService {
     if (!HOSTS_YOUTUBE.includes(host)) {
       throw new BadRequestException(`Link do YouTube inválido: ${url}`);
     }
-  }
-
-  private rodar(cmd: string, args: string[]): Promise<string> {
-    return new Promise((resolve, reject) => {
-      execFile(cmd, args, { maxBuffer: 10 * 1024 * 1024 }, (erro, stdout, stderr) => {
-        if (erro) reject(new Error(`yt-dlp falhou: ${stderr || erro.message}`));
-        else resolve(stdout);
-      });
-    });
   }
 }
