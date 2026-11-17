@@ -8,7 +8,7 @@
 |---|---|---|---|
 | Testes (todos) | `cd back && CI=true npx jest` | fim de fase e entrega, se entrou código de produção depois da última vez que passou | leva ~5 s (2026-11-17; `montar-video.spec.ts` roda o ffmpeg real). Verde desde a T11 da dublagem-bjj |
 | Teste (um arquivo) | `cd back && CI=true npx jest <caminho>` | a cada tarefa | `pnpm --filter dubla run test` falha sem TTY (pnpm tenta reinstalar); usar `npx jest` direto em `back/` |
-| Lint | `cd back && npx eslint "src/**/*.ts"` | fim de fase e entrega | em 2026-11-17: 4 problemas preexistentes (`ffmpeg.service.ts` require/any, `ingestion.controller.ts` prettier, `main.ts` promise); não reformatar código alheio com prettier. `npm run lint` usa `--fix` e reescreve arquivos |
+| Lint | `cd back && npx eslint "src/**/*.ts"` | fim de fase e entrega | limpo desde 2026-11-17 (inclui `test/`). `npm run lint` usa `--fix` e reescreve arquivos |
 | Typecheck | `cd back && npx tsc --noEmit -p tsconfig.json` | fim de fase e entrega | ~2 s |
 | Build | `pnpm build` (raiz) | entrega | front: `tsc -b && vite build`; back: `nest build` |
 

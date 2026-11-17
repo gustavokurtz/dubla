@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import ffmpeg = require('fluent-ffmpeg');
+import ffmpeg from 'fluent-ffmpeg';
 import { PassThrough } from 'stream';
 import { writeFile, readFile, rm, mkdtemp } from 'fs/promises';
 import { tmpdir } from 'os';
@@ -36,7 +36,7 @@ export class FfmpegService {
         const chunks: Buffer[] = [];
         const passThrough = new PassThrough();
 
-        passThrough.on('data', (chunk) => chunks.push(chunk));
+        passThrough.on('data', (chunk: Buffer) => chunks.push(chunk));
         passThrough.on('end', () => resolve(Buffer.concat(chunks)));
 
         ffmpeg(tempVideo)

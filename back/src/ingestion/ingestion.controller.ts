@@ -25,7 +25,10 @@ export class IngestionController {
       limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
       fileFilter: (_req, file, cb) => {
         if (!file.mimetype.startsWith('video/')) {
-          cb(new HttpException('Apenas arquivos de vídeo são aceitos', HttpStatus.BAD_REQUEST), false);
+          cb(
+            new HttpException('Apenas arquivos de vídeo são aceitos', HttpStatus.BAD_REQUEST),
+            false,
+          );
           return;
         }
         cb(null, true);
