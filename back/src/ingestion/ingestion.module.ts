@@ -19,5 +19,6 @@ import { YoutubeModule } from '../youtube/youtube.module';
   ],
   controllers: [IngestionController],
   providers: [IngestionService],
+  exports: [IngestionService],
 })
 export class IngestionModule {}

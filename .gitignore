@@ -64,6 +64,7 @@ dist/
 # Relatórios e sondagens da dublagem
 relatorios/
 videos/
+dublados/
 
 # Venv das ferramentas Python (yt-dlp, demucs)
 back/.venv-py/

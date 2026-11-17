@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { FfmpegModule } from './ffmpeg/ffmpeg.module';
 import { ConfigModule } from '@nestjs/config';
 import { IngestionModule } from './ingestion/ingestion.module';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { IngestionModule } from './ingestion/ingestion.module';
     }),
     FfmpegModule,
     IngestionModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
