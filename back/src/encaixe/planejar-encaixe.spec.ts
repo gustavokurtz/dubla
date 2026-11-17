@@ -14,29 +14,36 @@ describe('planejarEncaixe', () => {
     });
   });
 
-  it('não cabe e ainda não foi encurtada: pede para encurtar', () => {
-    expect(planejarEncaixe({ ...base, duracaoAudio: 2.2, encurtamentos: 0 }).acao).toBe('encurtar');
-  });
-
-  it('já encurtada e sobra até 15%: acelera só o necessário', () => {
-    expect(planejarEncaixe({ ...base, duracaoAudio: 2.2, encurtamentos: 1 })).toEqual({
+  it('sobra até 15%: acelera só o necessário, sem encurtar', () => {
+    expect(planejarEncaixe({ ...base, duracaoAudio: 2.2, encurtamentos: 0 })).toEqual({
       acao: 'acelerar',
       atempo: 1.1,
       inicioDublado: 10,
       fimDublado: 12,
-      encurtamentos: 1,
+      encurtamentos: 0,
     });
   });
 
-  it('acelerar 15% não basta: acelera 15% e avança sobre o silêncio', () => {
-    const e = planejarEncaixe({ ...base, duracaoAudio: 2.875, encurtamentos: 1 });
+  it('acelerar 15% não basta: acelera 15% e avança sobre o silêncio, sem encurtar', () => {
+    const e = planejarEncaixe({ ...base, duracaoAudio: 2.875, encurtamentos: 0 });
     expect(e).toMatchObject({ acao: 'avancar', atempo: 1.15, inicioDublado: 10 });
     expect(e.fimDublado).toBeCloseTo(12.5);
   });
 
-  it('nem avançando cabe: encurta de novo, até 3 vezes', () => {
+  it('caso do D2: fala de 0,27 s com silêncio depois avança, não encurta', () => {
+    const e = planejarEncaixe({
+      inicio: 33.78,
+      fim: 34.05,
+      limite: 34.9,
+      duracaoAudio: 0.6,
+      encurtamentos: 0,
+    });
+    expect(e.acao).toBe('avancar');
+  });
+
+  it('nem acelerando e avançando cabe: pede para encurtar, até 3 vezes', () => {
     const longa = { ...base, duracaoAudio: 4 };
-    expect(planejarEncaixe({ ...longa, encurtamentos: 1 }).acao).toBe('encurtar');
+    expect(planejarEncaixe({ ...longa, encurtamentos: 0 }).acao).toBe('encurtar');
     expect(planejarEncaixe({ ...longa, encurtamentos: 2 }).acao).toBe('encurtar');
   });
 
@@ -56,7 +63,7 @@ describe('planejarEncaixe', () => {
       fim: 12,
       limite: 15,
       duracaoAudio: 3.45,
-      encurtamentos: 1,
+      encurtamentos: 0,
     });
     expect(e).toMatchObject({ acao: 'avancar', atempo: 1.15 });
     expect(e.fimDublado).toBeCloseTo(13);
@@ -69,7 +76,7 @@ describe('planejarEncaixe', () => {
       fim: 12,
       limite: 11.5,
       duracaoAudio: 1.6,
-      encurtamentos: 1,
+      encurtamentos: 0,
     });
     expect(e).toMatchObject({ acao: 'acelerar', fimDublado: 11.5 });
     expect(e.atempo).toBeCloseTo(1.067, 3);

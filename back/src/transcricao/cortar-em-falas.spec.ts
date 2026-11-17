@@ -33,24 +33,45 @@ describe('cortarEmFalas', () => {
     ]);
   });
 
-  it('corta em pausa de 0,4 s ou mais, e não em pausa menor', () => {
+  it('trecho curto não corta em pausa: junta os pedaços da frase (caso real do D2)', () => {
+    // "Okay," (0,32 s) … "you go" (0,27 s) … "to Jiu-Jitsu 101": pausas de 0,63 s e 0,85 s.
     const falas = cortarEmFalas([
-      p('keep', 0, 300),
-      p('your', 690, 900), // pausa de 0,39 s: mesma fala
-      p('elbows', 1300, 1600), // pausa de 0,4 s: fala nova
+      p('Okay,', 32830, 33150),
+      p('you', 33780, 33900),
+      p('go', 33900, 34050),
+      p('to', 34900, 35000),
+      p('Jiu-Jitsu', 35000, 35600),
+      p('101.', 35600, 36200),
+    ]);
+    expect(falas.map((f) => [f.inicio, f.fim, f.textoEn])).toEqual([
+      [32.83, 36.2, 'Okay, you go to Jiu-Jitsu 101.'],
+    ]);
+  });
+
+  it('trecho de 1,5 s ou mais corta em pausa de 0,4 s, e não em pausa menor', () => {
+    const falas = cortarEmFalas([
+      p('keep', 0, 800),
+      p('your', 1190, 1600), // pausa de 0,39 s: mesma fala
+      p('elbows', 2000, 2300), // pausa de 0,4 s com 1,6 s acumulado: fala nova
     ]);
     expect(falas.map((f) => f.textoEn)).toEqual(['keep your', 'elbows']);
   });
 
-  it('corta em fim de frase (. ? !)', () => {
+  it('pausa de 1,5 s ou mais sempre corta, mesmo em trecho curto', () => {
+    const falas = cortarEmFalas([p('Okay,', 0, 300), p('look', 1800, 2100)]);
+    expect(falas.map((f) => f.textoEn)).toEqual(['Okay,', 'look']);
+  });
+
+  it('fim de frase (. ? !) corta só quando o trecho já tem 1,5 s', () => {
     const falas = cortarEmFalas([
-      p('Okay.', 0, 300),
+      p('Okay.', 0, 300), // 0,3 s: junta com a seguinte
       p('Now', 350, 500),
-      p('what?', 550, 800),
-      p('Sweep!', 850, 1200),
-      p('Go', 1250, 1400),
+      p('grab', 550, 900),
+      p('the', 950, 1100),
+      p('sleeve.', 1150, 1700), // 1,7 s acumulado: corta
+      p('Sweep!', 1750, 2200),
     ]);
-    expect(falas.map((f) => f.textoEn)).toEqual(['Okay.', 'Now what?', 'Sweep!', 'Go']);
+    expect(falas.map((f) => f.textoEn)).toEqual(['Okay. Now grab the sleeve.', 'Sweep!']);
   });
 
   it('fala sem pausa nem ponto passa de 12 s: corta depois da última vírgula', () => {

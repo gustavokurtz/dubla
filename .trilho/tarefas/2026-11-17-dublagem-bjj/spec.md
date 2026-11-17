@@ -25,7 +25,9 @@ Quando o vídeo é dublado, cada fala em português começa no mesmo instante em
 
 ### R2 — A fala em português cabe no tempo da original
 
-Quando a fala em português sai mais longa que o espaço da original, o Claude reescreve a frase mais enxuta, sem perder o sentido. Se ainda sobrar, o áudio é acelerado em até 15%. Se mesmo assim não couber, a fala pode avançar sobre o silêncio que vem depois, mas nunca sobre a próxima fala. O vídeo nunca é cortado nem desacelerado.
+Quando a fala em português sai mais longa que o espaço da original, o áudio é acelerado em até 15%. Se ainda sobrar, a fala avança sobre o silêncio que vem depois, mas nunca sobre a próxima fala. Só se mesmo assim não couber, o Claude reescreve a frase mais enxuta, sem perder o sentido. O vídeo nunca é cortado nem desacelerado.
+
+- **Mudou em 2026-11-17 (você, no chat):** antes o Claude encurtava primeiro. Na rodada real isso pediu o impossível ("vai" em 0,27 s, com 0,85 s de silêncio livre logo depois) e custou uma chamada ao Claude por fala.
 
 - **Exemplo:** "You want to keep your elbows tight" leva 1,8 s. "Você quer manter os cotovelos bem fechados e colados no corpo" sairia com 2,6 s, então vira "Mantém o cotovelo colado", que cabe em 1,7 s.
 - **Por quê:** português costuma ser 20 a 30% mais longo que inglês, e é isso que empurra a voz para trás da imagem (O2).

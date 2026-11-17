@@ -1,7 +1,10 @@
 import { EncaixeDaFala, FalaRevisada } from '../shared/types';
 import { FalaNoRelatorio } from '../relatorio/relatorio';
 import { AudioDaFala } from '../voz/voz.service';
-import { planejarEncaixe } from './planejar-encaixe';
+import { MAXIMO_DE_ENCURTAMENTOS, planejarEncaixe } from './planejar-encaixe';
+
+// Menos que isso não é uma palavra em português: não adianta pedir para encurtar.
+const ALVO_MINIMO = 5;
 
 export interface FalaEncaixada {
   fala: FalaNoRelatorio & { encaixe: EncaixeDaFala }; // com o português final
@@ -49,6 +52,19 @@ export async function encaixarFalas(
         break;
       }
       const alvo = Math.floor((fala.textoPt.length * espaco) / duracaoAudio);
+      if (alvo < ALVO_MINIMO) {
+        // Não cabe nem uma palavra: pedir ao Claude devolve vazio (D2). Corta no limite,
+        // guardando quantas vezes a fala foi de fato encurtada.
+        const corte = planejarEncaixe({
+          inicio: fala.inicio,
+          fim: fala.fim,
+          limite,
+          duracaoAudio,
+          encurtamentos: MAXIMO_DE_ENCURTAMENTOS,
+        });
+        resultado.push({ fala: { ...fala, encaixe: { ...corte, encurtamentos } }, audio });
+        break;
+      }
       const motivo = `o áudio dublado tem ${duracaoAudio.toFixed(1)} s e o espaço é de ${espaco.toFixed(1)} s`;
       const textoPt = await deps.encurtar(fala, alvo, motivo);
       fala = { ...fala, textoPt };

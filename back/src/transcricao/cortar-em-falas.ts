@@ -8,11 +8,14 @@ export interface PalavraComTempo {
 }
 
 const PAUSA_MS = 400;
+const PAUSA_LONGA_MS = 1_500;
+const MINIMO_MS = 1_500;
 const MAXIMO_MS = 12_000;
 
-// Corta as palavras da transcrição em falas: troca de pessoa, pausa >= 0,4 s
-// ou fim de frase. Fala que passaria de 12 s é cortada depois da última
-// vírgula (ou, sem vírgula, antes da palavra que estoura).
+// Corta as palavras da transcrição em falas. Sempre: troca de pessoa ou pausa
+// >= 1,5 s. Em pausa >= 0,4 s ou fim de frase, só se o trecho já tem >= 1,5 s:
+// pedaço menor que isso nenhuma voz diz a tempo (D2). Fala que passaria de 12 s
+// é cortada depois da última vírgula (ou, sem vírgula, antes da palavra que estoura).
 export function cortarEmFalas(palavras: PalavraComTempo[]): Fala[] {
   const falas: Fala[] = [];
   const fechar = (trecho: PalavraComTempo[]) => {
@@ -34,11 +37,13 @@ export function cortarEmFalas(palavras: PalavraComTempo[]): Fala[] {
       );
     }
     const anterior = atual[atual.length - 1];
+    const pausa = anterior ? palavra.start - anterior.end : 0;
+    const trechoLongo = anterior && anterior.end - atual[0].start >= MINIMO_MS;
     if (
       anterior &&
       (palavra.speaker !== anterior.speaker ||
-        palavra.start - anterior.end >= PAUSA_MS ||
-        /[.?!]$/.test(anterior.text))
+        pausa >= PAUSA_LONGA_MS ||
+        (trechoLongo && (pausa >= PAUSA_MS || /[.?!]$/.test(anterior.text))))
     ) {
       fechar(atual);
       atual = [];

@@ -41,8 +41,8 @@ describe('encaixarFalas', () => {
     const curto = 'x'.repeat(19); // 1,9 s
     const encurtar = jest.fn().mockResolvedValue(curto);
     const sintetizar = jest.fn((_id: number, texto: string) => Promise.resolve(audioDe(texto)));
-    const longo = 'x'.repeat(30); // 3 s num espaço de 2 s
-    const falas = [fala(1, 0, 2, longo), fala(2, 5, 6, 'oi')];
+    const longo = 'x'.repeat(30); // 3 s num espaço de 2 s, próxima fala logo depois
+    const falas = [fala(1, 0, 2, longo), fala(2, 2.1, 6, 'oi')];
 
     const r = await encaixarFalas(
       falas,
@@ -91,5 +91,29 @@ describe('encaixarFalas', () => {
         sintetizar: jest.fn(),
       }),
     ).rejects.toThrow('Fala 1 sem áudio dublado');
+  });
+
+  it('alvo de encurtar menor que uma palavra: corta direto, sem pedir o impossível ao Claude', async () => {
+    const encurtar = jest.fn();
+    const sintetizar = jest.fn();
+    // 6 chars = 0,6 s num espaço de 0,2 s com a próxima fala colada: alvo = 2 chars.
+    const falas = [fala(1, 0, 0.2, 'xxxxxx'), fala(2, 0.25, 3, 'oi')];
+
+    const r = await encaixarFalas(
+      falas,
+      [
+        { id: 1, voz: 'v1', audio: audioDe('xxxxxx') },
+        { id: 2, voz: 'v1', audio: audioDe('oi') },
+      ],
+      10,
+      { medir, encurtar, sintetizar },
+    );
+
+    expect(encurtar).not.toHaveBeenCalled();
+    expect(r[0].fala.encaixe).toMatchObject({
+      acao: 'cortar',
+      fimDublado: 0.25,
+      encurtamentos: 0,
+    });
   });
 });

@@ -11,9 +11,8 @@ export interface FalaParaEncaixar {
   encurtamentos: number; // quantas vezes o tradutor já encurtou esta fala
 }
 
-// Decide como a fala dublada cabe no tempo (R2): encurtar → acelerar até 15% →
-// avançar sobre o silêncio até o limite. Só pede outro encurtamento quando nem
-// acelerando e avançando cabe; depois do 3º, corta no limite.
+// Decide como a fala dublada cabe no tempo (R2): acelerar até 15% → avançar
+// sobre o silêncio até o limite → encurtar (até 3 vezes) → cortar no limite.
 // `acao: 'encurtar'` é o pedido para o orquestrador encurtar, regerar e chamar de novo.
 export function planejarEncaixe(f: FalaParaEncaixar): EncaixeDaFala {
   const espaco = Math.min(f.fim, f.limite) - f.inicio;
@@ -27,7 +26,6 @@ export function planejarEncaixe(f: FalaParaEncaixar): EncaixeDaFala {
   });
 
   if (f.duracaoAudio <= espaco) return encaixe('ok', 1, f.inicio + f.duracaoAudio);
-  if (f.encurtamentos === 0) return encaixe('encurtar', 1, f.inicio + f.duracaoAudio);
   if (f.duracaoAudio / ATEMPO_MAXIMO <= espaco) {
     // Arredonda para cima: a fala acelerada nunca passa do espaço.
     const atempo = Math.ceil((f.duracaoAudio / espaco) * 1000 - 1e-9) / 1000;
