@@ -2,11 +2,11 @@
 
 **Atualizado em:** 2026-11-17
 **Etapa:** execucao
-**Último review:** nenhum
+**Último review:** a4842cd (fase 1) — sem achados ≥ 80
 
 ## Onde paramos
 
-Fase 1 completa (T1–T5): custo medido por chamada, trace por job, tradutor Sonnet 5.5 high + juiz Haiku 5.5 medium, validado contra o Opus no arm bar (US$ 0,11 por vídeo só de Claude). Falta o code review da fase.
+Fase 1 fechada (T1–T5, review feito): custo medido por chamada (`back/src/custos/`), trace por job (`back/src/trace/trace.ts`: `Trace`, `rodarNoTrace`, `traceAtual`), tradutor Sonnet 5.5 high + juiz Haiku 5.5 medium (`POR_PAPEL` em `back/src/traducao/claude.ts`), validado contra o Opus no arm bar: US$ 0,11 de Claude por vídeo. Nada roda ainda dentro de um `Trace` na pipeline real: quem abre o trace e as etapas é a fase 2 (T6/T7).
 
 ## Tarefas
 
@@ -30,11 +30,13 @@ Fase 1 completa (T1–T5): custo medido por chamada, trace por job, tradutor Son
 
 ## Próximo passo
 
-Code review da fase 1; depois handoff e /clear. Fase 2 começa pela T6 (fila de jobs em memória).
+Fase 2, T6: `back/src/jobs/` (`JobsService`) — fila em memória, um job por vez, cada job roda `IngestionService.dublar/dublarLink` dentro de `rodarNoTrace(new Trace(), …)`; erro chama `trace.falhar(msg)` e segue a fila; MP4 em `dublados/<id>.mp4` na raiz (pôr no `.gitignore`). Teste primeiro (`jobs.service.spec.ts`, dublagem simulada).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
 - Acha a Claude cara ("2 dólares em 2 vídeos"); não quer usar OpenAI.
+- Autorizou as duas rodadas pagas da T5 nesta sessão (autorização não vale para rodadas futuras).
+- Preços da AssemblyAI (T1) apresentados; ainda sem confirmação dele.
 
 ## Defeitos
 
@@ -43,6 +45,8 @@ Code review da fase 1; depois handoff e /clear. Fase 2 começa pela T6 (fila de 
 ## Aprendizados
 
 - Nos 3 relatórios de 2026-11-17 o encurtar rodou 0 vezes e o juiz reprovou no máximo 1 fala por vídeo: o custo vem de 2 chamadas grandes por vídeo (tradução + juiz) em Opus 5.5 effort high.
+- O `Trace` emite eventos `etapa` / `progresso` / `chamada` (`assinar` devolve a função de cancelar): é o que o SSE da T8 vai repassar. `iniciarEtapa(nome, total?)` fecha a anterior; `avancar()` soma 1 em `feito`.
+- Script de comparação: `cd back && node --env-file=../.env -r ts-node/register scripts/comparar-modelos.ts <relatorio.json> [--simulado]`; os `.md` de `relatorios/` não vão para o git.
 - `docker` não está disponível no WSL (precisa da integração do Docker Desktop) — T11.
 
 ## Rodadas da T5
