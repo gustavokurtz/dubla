@@ -51,6 +51,7 @@ export class VozService {
     for (const f of falas) {
       const voz = vozes[f.pessoa].voz;
       audios.push({ id: f.id, voz, audio: await this.sintetizar(f.id, f.textoPt, voz) });
+      traceAtual()?.avancar();
     }
     return audios;
   }

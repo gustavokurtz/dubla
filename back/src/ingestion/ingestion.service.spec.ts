@@ -9,6 +9,7 @@ import { VozService } from '../voz/voz.service';
 import { YoutubeService } from '../youtube/youtube.service';
 import { gravarRelatorio, Relatorio } from '../relatorio/relatorio';
 import { Fala, FalaTraduzida } from '../shared/types';
+import { rodarNoTrace, Trace } from '../trace/trace';
 
 jest.mock('../relatorio/relatorio', () => ({
   ...jest.requireActual<object>('../relatorio/relatorio'),
@@ -114,6 +115,31 @@ describe('IngestionService', () => {
     expect(posicionadas.map((p) => [p.audio.toString(), p.encaixe.inicioDublado])).toEqual([
       ['aparado fala 1', 1],
       ['aparado fala 2', 4],
+    ]);
+  });
+
+  it('abre as 7 etapas no trace, com o total de falas nas que vão fala por fala', async () => {
+    const trace = new Trace();
+    await rodarNoTrace(trace, () => service.dublar(Buffer.from('video'), 'aula'));
+
+    expect(trace.etapas.map((e) => [e.nome, e.total])).toEqual([
+      ['Extraindo o áudio', undefined],
+      ['Separando voz e fundo', undefined],
+      ['Transcrevendo', undefined],
+      ['Traduzindo e revisando', undefined],
+      ['Gerando as vozes', 2],
+      ['Encaixando as falas', 2],
+      ['Montando o vídeo', undefined],
+    ]);
+  });
+
+  it('com link, baixar o vídeo é uma etapa antes das 7', async () => {
+    const trace = new Trace();
+    await rodarNoTrace(trace, () => service.dublarLink('https://www.youtube.com/watch?v=abc'));
+
+    expect(trace.etapas.map((e) => e.nome).slice(0, 2)).toEqual([
+      'Baixando o vídeo',
+      'Extraindo o áudio',
     ]);
   });
 

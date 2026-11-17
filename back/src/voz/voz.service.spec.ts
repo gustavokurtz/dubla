@@ -72,6 +72,18 @@ describe('VozService', () => {
     });
   });
 
+  it('conta cada fala pronta na etapa das vozes', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(respostaOk('mp3')));
+    const trace = new Trace();
+    trace.iniciarEtapa('Gerando as vozes', 2);
+
+    await rodarNoTrace(trace, () =>
+      service.gerarAudios([fala(1, 'A', 0, 1, 'Oi'), fala(2, 'A', 1, 2, 'Tá')]),
+    );
+
+    expect(trace.etapas[0]).toMatchObject({ feito: 2, total: 2 });
+  });
+
   it('erro HTTP vira erro explícito com a fala e a resposta', async () => {
     fetchMock.mockResolvedValue({
       ok: false,

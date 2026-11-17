@@ -1,5 +1,6 @@
 import { FalaRevisada } from '../shared/types';
 import { encaixarFalas } from './encaixar-falas';
+import { rodarNoTrace, Trace } from '../trace/trace';
 
 function fala(id: number, inicio: number, fim: number, textoPt: string): FalaRevisada {
   return {
@@ -81,6 +82,24 @@ describe('encaixarFalas', () => {
     expect(encurtar).toHaveBeenCalledTimes(6); // 3 por fala
     expect(r[0].fala.encaixe).toMatchObject({ acao: 'cortar', fimDublado: 3, encurtamentos: 3 });
     expect(r[1].fala.encaixe).toMatchObject({ acao: 'cortar', fimDublado: 6, encurtamentos: 3 });
+  });
+
+  it('conta cada fala encaixada na etapa, inclusive a cortada', async () => {
+    const trace = new Trace();
+    trace.iniciarEtapa('Encaixando as falas', 2);
+    // A 2ª não cabe nem uma palavra no espaço: vai direto para o corte.
+    const falas = [fala(1, 0, 2, '0123456789'), fala(2, 2, 2.1, '0123456789')];
+
+    await rodarNoTrace(trace, () =>
+      encaixarFalas(
+        falas,
+        falas.map((f) => ({ id: f.id, voz: 'v1', audio: audioDe(f.textoPt) })),
+        2.2,
+        { medir, encurtar: jest.fn(), sintetizar: jest.fn() },
+      ),
+    );
+
+    expect(trace.etapas[0]).toMatchObject({ feito: 2, total: 2 });
   });
 
   it('fala sem áudio é erro explícito', async () => {

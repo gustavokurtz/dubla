@@ -2,6 +2,7 @@ import { EncaixeDaFala, FalaRevisada } from '../shared/types';
 import { FalaNoRelatorio } from '../relatorio/relatorio';
 import { AudioDaFala } from '../voz/voz.service';
 import { ATEMPO_MAXIMO, MAXIMO_DE_ENCURTAMENTOS, planejarEncaixe } from './planejar-encaixe';
+import { traceAtual } from '../trace/trace';
 
 // Menos que isso não é uma palavra em português: não adianta pedir para encurtar.
 const ALVO_MINIMO = 5;
@@ -73,6 +74,7 @@ export async function encaixarFalas(
       audio = await deps.sintetizar(fala.id, textoPt, gerado.voz);
       encurtamentos++;
     }
+    traceAtual()?.avancar();
   }
   return resultado;
 }

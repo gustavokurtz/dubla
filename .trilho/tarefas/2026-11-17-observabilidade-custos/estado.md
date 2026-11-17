@@ -16,7 +16,7 @@ Fase 1 fechada (T1–T5, review feito): custo medido por chamada (`back/src/cust
 - T4 — feito (`--simulado` no relatório do arm bar: 72 falas, refazer exercitado, tabela de custo gerada)
 - T5 — feito (rodada 2: meta atingida; `relatorios/comparacao-2026-11-17-20-43.md`)
 - T6 — feito (`jobs.service.spec.ts`, 3 testes; suíte 96 verde)
-- T7 — pendente
+- T7 — feito (specs de ingestão, voz e encaixe; suíte 100 verde)
 - T8 — pendente
 - T9 — pendente
 - T10 — pendente
@@ -30,7 +30,7 @@ Fase 1 fechada (T1–T5, review feito): custo medido por chamada (`back/src/cust
 
 ## Próximo passo
 
-Fase 2, T7: `IngestionService.dublar` abre as 7 etapas no trace (no lugar dos logs `n/7`); `gerarAudios` e `encaixarFalas` avançam `feito/total` por fala. Teste primeiro em `ingestion.service.spec.ts`.
+Fase 2, T8: `JobsController` com `POST /jobs`, `GET /jobs/:id`, `GET /jobs/:id/eventos` (SSE) e `GET /jobs/:id/video`; remover `POST /ingestion/dublar` e o `IngestionController`. Teste primeiro (validações, 404, 409).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -68,6 +68,7 @@ Fase 2, T7: `IngestionService.dublar` abre as 7 etapas no trace (no lugar dos lo
 - T2: custo usa `resposta.model` (o modelo que de fato respondeu). Se um fallback server-side cair em modelo sem preço, a chamada falha com erro explícito; o custo da parte recusada antes do fallback (`usage.iterations`) não é separado.
 - T3: modelo/esforço/fallback ficam numa tabela por papel dentro de `claude.ts` (`POR_PAPEL`), e não passados por cada serviço como o plano dizia: um lugar só para trocar modelo, e os serviços continuam passando só o papel. Teste antigo que conferia Opus/high foi atualizado para a regra nova (R2).
 - T6: `JobsService` (`back/src/jobs/`) guarda os jobs num `Map` e a fila num array; `posicao` = quantos vídeos estão antes (0 = dublando ou o próximo). Job de link usa a URL como nome (o título só aparece depois do download). A pasta `dublados/` entra por injeção (`PASTA_DUBLADOS`) para o teste usar um `mkdtemp`. Ainda sem aviso de mudança de situação do job: o SSE da T8 decide o que precisa.
+- T7: dublagem por link tem uma etapa a mais antes das 7, "Baixando o vídeo" (o download leva tempo e sem etapa a tela ficaria parada); a T9 mostra essa etapa sem contar no "n de 7". O log do servidor continua com uma linha por etapa (`IngestionService.etapa`). O encaixe (função pura) avança o trace por `traceAtual()`, como os services.
 - T4: a comparação vai para `relatorios/comparacao-<AAAA-MM-DD-HH-MM>[-simulado].md` (com hora, para a segunda rodada não sobrescrever a primeira).
 
 ## Resultado
