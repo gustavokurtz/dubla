@@ -6,7 +6,7 @@
 
 ## Onde paramos
 
-Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz) e T9 (encaixe) feitas, T10 a seguir.
+Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz), T9 (encaixe) e T10 (mixagem) feitas, T11 a seguir.
 
 ## Tarefas
 
@@ -20,7 +20,7 @@ Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz) e T9 (encaixe) feitas, T10 a seg
 - T7 — feito (`back/src/relatorio/relatorio.ts`; 3 testes)
 - T8 — feito (`back/src/voz/`; 5 testes)
 - T9 — feito (`back/src/encaixe/planejar-encaixe.ts`; 8 testes)
-- T10 — pendente
+- T10 — feito (`FfmpegService.montarVideo`; teste real com ffmpeg; I4 verificada)
 - T11 — pendente
 - T12 — pendente
 - T13 — pendente (link do YouTube na tela)
@@ -28,7 +28,7 @@ Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz) e T9 (encaixe) feitas, T10 a seg
 
 ## Próximo passo
 
-T10 (mixagem): `FfmpegService.montarVideo(video, fundo, falasPosicionadas)` com `atempo` + `adelay` + `amix normalize=0`, fade 80 ms nas cortadas, vídeo copiado, duração do vídeo; teste com vídeo sintético e 3 tons (silencedetect), depois 300 falas (I4).
+T11 (orquestrador novo e limpeza): `IngestionService` na ordem extrair → separar → transcrever → traduzir + juiz → voz → encaixe (laço com `planejarEncaixe`, medir com ffprobe, `TraducaoService.encurtar` ainda não existe — conferir T5) → `montarVideo` → relatório. Remover `openai/`, `elevenlabs/`, `substituirAudio` se ficar sem uso, deps `openai` e `@elevenlabs/elevenlabs-js`; specs vermelhas verdes; `CLAUDE.md`.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -56,6 +56,9 @@ T10 (mixagem): `FfmpegService.montarVideo(video, fundo, falasPosicionadas)` com 
 - `pkill -f <padrão>` dentro do Bash mata o próprio shell (o padrão está na linha de comando dele): usar `timeout N <cmd> &` para processos auxiliares.
 - Reserva, se a voz voltar à mesa: Fish Audio (US$15/1M bytes, clone por API ou inline), Inworld (PT-BR Tier 1, US$25/1M, clone por API), Cartesia (cara). Todos com velocidade nativa.
 
+- I4 (2026-11-17): `amix` com 301 entradas (fundo + 300 falas, metade com atempo 1,1) num vídeo de 610 s: 25 s de montagem, todas as 300 falas no lugar, desvio máx. 0,0001 s. Sem lotes.
+- T10: no teste, as posições saíram com ±0,01 s (mp3 incluído, o atraso do encoder não pesa).
+
 ## Hipóteses descartadas
 
 - nenhuma
@@ -77,6 +80,8 @@ T10 (mixagem): `FfmpegService.montarVideo(video, fundo, falasPosicionadas)` com 
 - T8: `atribuirVozes(falas, vozes)` em `voz/atribuir-vozes.ts` devolve `{ [pessoa]: { voz, repetida } }` (ordem por tempo total de fala). `VozService.gerarAudios(falas)` gera em sequência e devolve `{ id, voz, audio }`; `sintetizar(id, texto, voz)` é pública para o encaixe regerar a fala depois de encurtar. `VOZES_PT` em `voz/voz.service.ts`. `VozModule` ainda não importado (T11).
 
 - T9: `planejarEncaixe({ inicio, fim, limite, duracaoAudio, encurtamentos })` devolve `EncaixeDaFala`. `acao: 'encurtar'` é o pedido ao orquestrador (encurtar → regerar → chamar de novo); o resultado final é sempre `ok | acelerar | avancar | cortar`, e o encurtamento aparece em `encurtamentos`. Depois do 1º encurtamento, só encurta de novo se nem 15% + silêncio bastam (até 3). Espaço = até `min(fim, limite)` (falas sobrepostas de duas pessoas). `atempo` arredondado para cima em 3 casas. Para a T11: o balde `encurtar` do resumo do relatório fica sempre 0 — contar encurtadas por `encurtamentos > 0` ao ligar o relatório.
+
+- T10: `montarVideo(video, fundo, falas: FalaPosicionada[])` com `FalaPosicionada = { audio, encaixe: EncaixeDaFala }` (exportada de `ffmpeg.service.ts`). Duração final por `ffprobe` do vídeo + `-t` (sem `-shortest`). Cortada = `atrim` até `fimDublado − inicioDublado` + `afade` de 80 ms. Teste em `ffmpeg/montar-video.spec.ts` roda o ffmpeg real (~1 s). Lint do `ffmpeg.service.ts`: os 3 erros que restam são preexistentes (prettier reverteu só no meu trecho).
 
 ## Resultado
 
