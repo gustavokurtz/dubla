@@ -13,6 +13,11 @@ export interface FalaPosicionada {
 
 const FADE_DO_CORTE = 0.08; // segundos
 
+// Quanto da fala cortada toca (segundos, nunca negativo); null quando não é cortada.
+function duracaoTocada(e: EncaixeDaFala): number | null {
+  return e.acao === 'cortar' ? Math.max(0, e.fimDublado - e.inicioDublado) : null;
+}
+
 @Injectable()
 export class FfmpegService {
   private readonly logger = new Logger(FfmpegService.name);
@@ -53,7 +58,9 @@ export class FfmpegService {
 
   // Mixa o fundo com cada fala dublada no seu instante (R1, R8): atempo do encaixe,
   // corte com fade nas cortadas, adelay até o início. Vídeo copiado, duração = a do vídeo.
-  async montarVideo(video: Buffer, fundo: Buffer, falas: FalaPosicionada[]): Promise<Buffer> {
+  async montarVideo(video: Buffer, fundo: Buffer, todas: FalaPosicionada[]): Promise<Buffer> {
+    // Cortada sem tempo nenhum (a próxima fala começa junto) não tem o que tocar.
+    const falas = todas.filter((f) => duracaoTocada(f.encaixe) !== 0);
     this.logger.log(`Montando vídeo com ${falas.length} falas`);
     const dir = await this.criarTempDir();
     const tempVideo = join(dir, 'input.mp4');
@@ -72,9 +79,11 @@ export class FfmpegService {
     const filtros = falas.map(({ encaixe: e }, i) => {
       const etapas: string[] = [];
       if (e.atempo !== 1) etapas.push(`atempo=${e.atempo}`);
-      if (e.acao === 'cortar') {
-        const d = e.fimDublado - e.inicioDublado;
-        etapas.push(`atrim=end=${d}`, `afade=t=out:st=${d - FADE_DO_CORTE}:d=${FADE_DO_CORTE}`);
+      const d = duracaoTocada(e);
+      if (d !== null) {
+        // Fade nunca maior que a própria fala: st negativo derruba o ffmpeg.
+        const fade = Math.min(FADE_DO_CORTE, d);
+        etapas.push(`atrim=end=${d}`, `afade=t=out:st=${d - fade}:d=${fade}`);
       }
       etapas.push(`adelay=${Math.round(e.inicioDublado * 1000)}:all=1`);
       return `[${i + 2}:a]${etapas.join(',')}[f${i}]`;

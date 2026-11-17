@@ -129,3 +129,44 @@ describe('FfmpegService.medirDuracao', () => {
     }
   });
 });
+
+describe('FfmpegService.montarVideo com cortes mínimos', () => {
+  it('fala cortada com menos de 80 ms (ou 0 s) não quebra a montagem', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dubla-teste-'));
+    try {
+      const video = gerar(dir, 'video.mp4', [
+        '-f',
+        'lavfi',
+        '-i',
+        'color=c=black:s=320x240:d=3',
+        '-f',
+        'lavfi',
+        '-i',
+        'anullsrc=r=44100',
+        '-t',
+        '3',
+        '-c:v',
+        'libx264',
+        '-c:a',
+        'aac',
+      ]);
+      const fundo = gerar(dir, 'fundo.wav', ['-f', 'lavfi', '-i', 'anullsrc=r=44100', '-t', '3']);
+      const falas = [
+        {
+          audio: tom(dir, 'a.mp3', 1),
+          encaixe: encaixe({ acao: 'cortar', inicioDublado: 1, fimDublado: 1.05 }),
+        },
+        {
+          audio: tom(dir, 'b.mp3', 1),
+          encaixe: encaixe({ acao: 'cortar', inicioDublado: 2, fimDublado: 2 }),
+        },
+      ];
+
+      const saida = await new FfmpegService().montarVideo(video, fundo, falas);
+
+      expect(duracao(dir, saida).video).toBeCloseTo(3, 1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60000);
+});
