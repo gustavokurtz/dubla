@@ -6,12 +6,12 @@
 
 ## Onde paramos
 
-Voz mudou para clone por API de outro provedor (spec R7/R9) e entrou o download do YouTube (R12, T0 feito). Sondagem das vozes prontas da AssemblyAI feita (comparação). Próximo: sondagem do clone (T1).
+T0 feito (download do YouTube). Voz voltou para vozes prontas da AssemblyAI (sem clone); rodada 2 da sondagem gerada com 8 vozes de timbre médio, esperando o dev escolher 2.
 
 ## Tarefas
 
 - T0 — feito (4 testes verdes; download real de um vídeo público de 19 s em ~3 s, H.264 + AAC em `videos/`)
-- T1 — pendente (refeita: sondagem do clone em outro provedor; rodada das vozes prontas já feita, fica como comparação)
+- T1 — esperando o dev: ouvir `relatorios/sondagem/aai-{robson,joaquim,cassio,luiz,antonio,nilson,caio,iago}-*.mp3` (rodada 2 de 3) e escolher 2 vozes
 - T2 — pendente
 - T3 — pendente
 - T4 — pendente
@@ -28,7 +28,7 @@ Voz mudou para clone por API de outro provedor (spec R7/R9) e entrou o download 
 
 ## Próximo passo
 
-T1: pedir ao dev o link de 1 vídeo do YouTube (3–5 min, uma pessoa) e baixar com `cd back && npx ts-node scripts/baixar-video.ts <link>`; confirmar na doc oficial Cartesia/Fish Audio/Inworld (clone por API, PT-BR, preço); escrever `back/scripts/sondagem-clone.mts`; rodar só com o "pode" e as chaves dos 2 provedores no `.env`. Provedores escolhidos para a sondagem: Fish Audio (`FISH_API_KEY`) e Inworld (`INWORLD_API_KEY`); Cartesia de reserva.
+Ler o resultado da T1 (2 vozes escolhidas pelo dev). Em paralelo, T2 (Demucs no `back/.venv-py`) precisa de 1 link do YouTube (3–5 min, uma pessoa) baixado com `cd back && npx ts-node scripts/baixar-video.ts <link>`.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -57,6 +57,10 @@ T1: pedir ao dev o link de 1 vídeo do YouTube (3–5 min, uma pessoa) e baixar 
   - **Inworld**: criar `POST https://api.inworld.ai/voices/v1/voices:clone` (JSON, `voiceSamples[{audioData base64, transcription?}]`, `languageCode`, `audioProcessingConfig.removeBackgroundNoise`; 10–30 s) → `voice.voiceId`; apagar `DELETE /voices/v1/voices/{voiceId}`. TTS `POST https://api.inworld.ai/tts/v1/voice` (`text` ≤ 2000, `modelId: inworld-tts-2`, `language: pt-BR`, `audioConfig.speakingRate` 0.5–1.5, resposta base64). PT-BR Tier 1. US$25/1M (On-Demand; Flash US$15/1M). Auth `Basic $INWORLD_API_KEY`. Limite 100 vozes custom.
   - **Cartesia** (reserva): `POST /voices/clone`, `sonic-3.6`, `speed` 0.6–1.5, clone EN mantém sotaque sem `PATCH /voices/{id}/accents brazilian-portuguese`; US$37–65/1M e IVC só em plano pago.
   - Os três têm controle de velocidade nativo (a AssemblyAI não tinha): pode substituir o `atempo` do ffmpeg em T9; decidir depois da escolha do provedor.
+
+- Usuário (2026-11-17): "usa voz fixa msm mas a do nelson e mt paia ... tipo 2 vozes media nao uma nova ae um parecendo um velho ai pode seguir". Clone descartado de novo; spec R7/R9 e plano (I1, T1, T8) de volta às vozes prontas. Pesquisa de Fish/Inworld/Cartesia acima fica como reserva.
+- Catálogo AssemblyAI: `GET https://tts.us.assemblyai.com/v1/voices?scope=public&limit=100` (paginar por `next_cursor`) lista 4073 vozes públicas com `language` e `tags` (`accent:`, `age:`, `gender:` etc.); 196 em português (190 sotaque brasileiro, 73 meia-idade). Sem `scope` lista só as da conta. Não documentado na página de vozes.
+- Sondagem T1 rodada 2 (2026-11-17, "pode seguir" do usuário): 8 vozes × 5 falas, 3352 caracteres (~US$0,05).
 
 ## Hipóteses descartadas
 

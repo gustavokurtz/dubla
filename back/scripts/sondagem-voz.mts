@@ -1,9 +1,10 @@
 // Sondagem T1: as vozes prontas PT da AssemblyAI lendo falas de jiu-jitsu.
-// Uso (em back/): node --env-file=../.env --experimental-strip-types scripts/sondagem-voz.mts
+// Uso (em back/): node --env-file=../.env --experimental-strip-types scripts/sondagem-voz.mts [slug ...]
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const VOZES = ['aai-nelson', 'aai-benicio'];
+// Vozes pela linha de comando (slugs); sem argumento, as duas da 1ª rodada.
+const VOZES = process.argv.length > 2 ? process.argv.slice(2) : ['aai-nelson', 'aai-benicio'];
 const FALAS = [
   'Beleza, agora da guarda fechada você quebra a postura dele, puxa a gola e já monta o armlock.',
   'Olha só: na meia-guarda, o segredo é pegar o underhook e ficar de lado, nunca de costas pro chão.',

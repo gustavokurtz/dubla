@@ -20,10 +20,9 @@
 
 | Questão | Decisão | Porquê |
 |---|---|---|
-| Provedor de transcrição | AssemblyAI (usuário) | Barato, com quem-fala e lista de termos |
-| Provedor de voz | Um que clone pela API (Cartesia, Fish Audio ou Inworld; nunca ElevenLabs), escolhido pelo dev ouvindo a sondagem T1 (usuário, 2026-11-17) | AssemblyAI só clona pelo painel |
-| Voz | Clone por pessoa a partir de ~30 s de voz limpa (separada pelo Demucs) do próprio vídeo, criado e apagado pela API do provedor (usuário) | Natural, timbre original |
-| Clones | Apagados no provedor no `finally` do vídeo (decidido por mim) | Não acumular vozes de terceiros |
+| Provedor de transcrição e voz | AssemblyAI para os dois (usuário) | Quer um só provedor, barato, com quem-fala |
+| Voz | Vozes prontas PT-BR da AssemblyAI, sem clone (usuário, 2026-11-17): 2 vozes de timbre médio escolhidas pelo dev na sondagem T1 (slugs em `VOZES_PT`, ordem = pessoa que mais fala primeiro); da 3ª pessoa em diante alterna e o relatório marca (decidido por mim) | Clone descartado pelo usuário; Nelson soa velho |
+| Síntese | REST `POST https://tts.us.assemblyai.com/v1/speech` com `fetch` (`language: portuguese`, `encoding: mp3`, `stream: false`, chave em `Authorization`); catálogo em `GET /v1/voices?scope=public` (filtrar por `language` e `tags`) (decidido por mim) | É um POST só; `speed` só aceita 1, então velocidade fica no ffmpeg |
 | YouTube | `yt-dlp` (`python -m yt_dlp`) no mesmo venv Python do Demucs; `YoutubeService.baixar(url)` usado pelo endpoint (link na tela) e por `back/scripts/baixar-video.mts` → `videos/` na raiz, no `.gitignore` (usuário: "os dois"; ferramenta decidida por mim) | Padrão de fato para baixar do YouTube; um venv só para as ferramentas Python |
 | Fundo | Separar voz e fundo; manter fundo (usuário) | Parecer nativo |
 | Termos | Tatame BR (usuário) | — |
@@ -43,7 +42,7 @@
 
 ## Incertezas
 
-- **I1** — O clone em PT-BR soa natural, e em qual provedor (Cartesia, Fish Audio, Inworld)? Preço, PT-BR e API de criar/apagar clone confirmados na doc oficial antes de rodar. Sondagem em T1, antes de construir em volta dela.
+- **I1** — Quais 2 vozes prontas PT-BR soam naturais e de timbre médio lendo jiu-jitsu? Sondagem em T1, antes de construir em volta dela.
 - **I2** — Demucs roda na RTX 4050 6 GB em WSL com tempo aceitável (≤ 1× a duração do vídeo)? Sondagem em T2.
 - **I3** — Tradução + juiz soam nativos e cabem no tempo? Só se mede nos vídeos reais (T12).
 - **I4** — amix com centenas de entradas funciona no ffmpeg 6.1 (limite de entradas/descritores)? Verificado em T10 com 300 falas sintéticas.
@@ -59,11 +58,11 @@ Antes de usar qualquer SDK (assemblyai, @anthropic-ai/sdk, zod), consultar Conte
   - Como: venv `back/.venv-py` (no `.gitignore`) com `yt-dlp`; `YoutubeService.baixar(url) → { arquivo, titulo }` em `back/src/youtube/`, mp4 até 720p, em temp dir; script `back/scripts/baixar-video.mts <url>` copia para `videos/` na raiz (no `.gitignore`).
   - Teste: spec com `child_process` mockado confere argumentos e erro explícito com link inválido.
   - Verificar por: dev passa um link; o mp4 aparece em `videos/`. Sem custo.
-- **T1** — Sondagem do clone em PT-BR
+- **T1** — Sondagem das vozes prontas em PT-BR
   - Atende: R7, R9
-  - Como: confirmar na doc oficial (Context7/site) de Cartesia, Fish Audio e Inworld: API de criar e apagar clone, PT-BR e preço; escolher os 2 melhores. Script `back/scripts/sondagem-clone.mts`: recorta ~30 s de fala do vídeo de T0 (ffmpeg, trecho indicado pelo dev ou de 0:30 a 1:00), cria o clone em cada provedor, gera as mesmas 5 falas de `sondagem-voz.mts`, salva em `relatorios/sondagem/<provedor>-N.mp3`, apaga os clones no `finally`. Comparação com Nelson/Benício (já gerados).
+  - Como: `back/scripts/sondagem-voz.mts [slug ...]` gera as mesmas 5 falas de jiu-jitsu com cada voz candidata em `relatorios/sondagem/`. Rodada 1: Nelson e Benício. Rodada 2: 8 de timbre médio do catálogo (Robson, Joaquim, Cássio, Luiz, Antônio, Nilson, Caio, Iago).
   - Quem roda: dev (ouve e escolhe; a rodada é paga e pede o "pode")
-  - Meta: dev escolhe um provedor cujo clone soa natural. Orçamento: 2 rodadas, < US$1. Se esgotar: parar e trazer ao usuário (opções: clone manual no painel da AssemblyAI ou vozes prontas).
+  - Meta: dev escolhe 2 vozes. Orçamento: 3 rodadas, < US$1. Se esgotar: parar e trazer ao usuário (outro provedor de voz).
 - **T2** — Demucs instalado e serviço de separação
   - Atende: R8
   - Como: no venv `back/.venv-py` de T0, `pip install demucs` com torch CUDA; `SeparacaoService.separar(audio) → { voz, fundo }` em `back/src/separacao/`, padrão temp dir do `FfmpegService`.
@@ -78,7 +77,7 @@ Antes de usar qualquer SDK (assemblyai, @anthropic-ai/sdk, zod), consultar Conte
   - Como: `TranscricaoService` em `back/src/transcricao/` envia o áudio com identificação de quem fala, palavras com tempo e a lista de termos do guia. Função pura `cortarEmFalas(palavras)` → `Fala { id, pessoa, inicio, fim, textoEn }`, cortando em fim de frase, troca de pessoa ou pausa ≥ 0,4 s, máximo ~12 s. Novo tipo em `shared/types.ts`.
   - Teste: fixture JSON de resposta gravada (escrita à mão no formato da doc) → falas esperadas: troca de pessoa, pausa, limite de 12 s, frase única.
 
-**Fim da fase 1:** vídeo baixando pelo link; provedor de voz escolhido pelo dev (ou decisão dele registrada); `npx jest` das specs novas verde; Demucs separando o vídeo 1.
+**Fim da fase 1:** vídeo baixando pelo link; 2 vozes escolhidas pelo dev (ou decisão dele registrada); `npx jest` das specs novas verde; Demucs separando o vídeo 1.
 
 ### Fase 2 — Correção, tradução e juiz
 
@@ -99,10 +98,10 @@ Antes de usar qualquer SDK (assemblyai, @anthropic-ai/sdk, zod), consultar Conte
 
 ### Fase 3 — Voz, sincronia e vídeo final
 
-- **T8** — Clone por pessoa e voz de cada fala
+- **T8** — Voz de cada pessoa e áudio de cada fala
   - Atende: R7
-  - Como: `VozService` em `back/src/voz/` (cliente do provedor escolhido em T1): para cada pessoa, junta as falas mais longas dela do áudio **de voz separada** (T2) até ~30 s, cria o clone, gera o áudio de cada fala com o clone da pessoa, apaga os clones no `finally`.
-  - Teste: provedor mockado; com 1 e com 2 pessoas, confere que cada fala usa o clone da sua pessoa e que os clones são apagados mesmo com erro.
+  - Como: função pura `atribuirVozes(falas, vozes)` → pessoa → voz (ordem por tempo total de fala; voz 1, voz 2, alterna da 3ª em diante, marcando repetição); `VozService` em `back/src/voz/` gera o áudio de cada fala com a voz da pessoa via `POST /v1/speech`.
+  - Teste: `atribuirVozes` com 1, 2 e 3 pessoas; `fetch` mockado confere que cada fala usa a voz da sua pessoa e que erro HTTP vira erro explícito.
 - **T9** — Encaixe no tempo
   - Atende: R1, R2
   - Como: função pura `planejarEncaixe(fala, duracaoAudio, inicioProximaFala)` → `{ acao: ok | encurtar | acelerar | avancar | cortar, atempo, fim }`, seguindo a ordem decidida; o laço (medir com ffprobe → encurtar até 3× → regerar voz) fica no orquestrador.
@@ -113,7 +112,7 @@ Antes de usar qualquer SDK (assemblyai, @anthropic-ai/sdk, zod), consultar Conte
   - Teste: monta um vídeo sintético (cor sólida + silêncio) com 3 falas de tom (sine) em 1 s, 3 s e 5 s e confere, por `silencedetect`, que cada tom começa no instante certo (±0,1 s). Verificar por: mesmo teste com 300 falas sintéticas (I4).
 - **T11** — Orquestrador novo e limpeza
   - Atende: R1, R9
-  - Como: `IngestionService` na ordem: extrair áudio → separar (Demucs) → transcrever → traduzir + juiz → clones + voz → encaixe → montar → relatório. Remover `back/src/openai/`, `back/src/elevenlabs/` e as dependências `openai` e `@elevenlabs/elevenlabs-js`; consertar as specs vermelhas que ficarem (providers mockados). Atualizar `CLAUDE.md` (pipeline, variáveis de ambiente, venv do Demucs).
+  - Como: `IngestionService` na ordem: extrair áudio → separar (Demucs) → transcrever → traduzir + juiz → voz → encaixe → montar → relatório. Remover `back/src/openai/`, `back/src/elevenlabs/` e as dependências `openai` e `@elevenlabs/elevenlabs-js`; consertar as specs vermelhas que ficarem (providers mockados). Atualizar `CLAUDE.md` (pipeline, variáveis de ambiente, venv do Demucs).
   - Teste: spec do orquestrador com todos os serviços mockados conferindo a ordem e que o relatório recebe todas as falas.
 
 - **T13** — Link do YouTube na tela
@@ -142,6 +141,6 @@ Validação manual (o usuário roda no final):
 
 1. `pnpm dev`, colar o link do vídeo do YouTube na tela → baixa o vídeo dublado (R12, R9, R11)
 2. Pular para o meio e o fim do vídeo → a voz bate com o movimento na tela (R1, R2)
-3. Ouvir o professor → fala português com o próprio timbre (R7)
+3. Ouvir o professor → fala português com a voz escolhida, sem trocar (R7)
 4. Ouvir o fundo → música/ambiente presentes, sem inglês por baixo (R8)
 5. Abrir o relatório em `relatorios/` → todas as falas com quem falou, português e veredito do juiz (R10, R3, R4, R5, R6)

@@ -63,13 +63,13 @@ Quando a tradução fica pronta, um juiz (outra chamada do Claude, com critério
 - **Por quê:** é o judge que você pediu, para a tradução não sair com cara de máquina (O6, O3).
 - **Como a gente confere:** testes com respostas simuladas do Claude conferem o vai-e-volta e o limite de 2 tentativas. Nos vídeos reais, o relatório mostra os vereditos.
 
-### R7 — Cada pessoa fala com a própria voz, clonada, em português
+### R7 — Cada pessoa fala com uma voz pronta própria, em português
 
-Quando o vídeo tem uma ou mais pessoas falando, cada uma ganha um clone da própria voz, feito automaticamente a partir de uns 30 segundos do próprio vídeo, e fala português com esse timbre. O clone é feito por um provedor de voz que cria clone pela API (a AssemblyAI só clona pelo painel do site). Qual provedor, você escolhe ouvindo a sondagem do começo.
+Quando o vídeo tem uma ou mais pessoas falando, cada uma recebe uma voz pronta brasileira da AssemblyAI e fala sempre com ela. São 2 vozes de timbre médio, nem de velho nem de criança, escolhidas por você ouvindo a sondagem. A pessoa que mais fala no vídeo fica com a primeira voz, a segunda com a outra. Com uma terceira pessoa ou mais, as vozes se repetem e o relatório avisa. Não tem clone: você preferiu voz pronta (2026-11-17).
 
-- **Exemplo:** o professor de voz grave fala português com voz grave, e o aluno com a voz dele. As duas nunca se trocam.
+- **Exemplo:** o professor, que fala mais, sai com a voz 1 e o aluno com a voz 2. As duas vozes nunca se trocam no meio do vídeo.
 - **Por quê:** voz natural e uma voz para cada pessoa é o que tira a cara de robô (O4, O1).
-- **Como a gente confere:** na sondagem do começo, você ouve o clone do professor em português feito por 2 provedores, ao lado das vozes prontas da AssemblyAI, e escolhe. O caso de duas pessoas é conferido por testes automáticos (cada fala usa o clone da sua pessoa).
+- **Como a gente confere:** na sondagem do começo, você ouve as candidatas lendo falas de jiu-jitsu e escolhe as 2. O caso de duas pessoas é conferido por testes automáticos (cada fala usa a voz da sua pessoa).
 
 ### R8 — O som ambiente do vídeo continua
 
@@ -79,12 +79,12 @@ Quando o vídeo é dublado, a voz em inglês sai e o resto do áudio original co
 - **Por quê:** vídeo sem ambiente soa artificial. Com ele, parece gravado em português (O1).
 - **Como a gente confere:** você ouve os vídeos de teste.
 
-### R9 — Transcrição pela AssemblyAI, voz pelo provedor escolhido, tradução e juiz pelo Claude
+### R9 — Transcrição e voz pela AssemblyAI, tradução e juiz pelo Claude
 
-Quando o vídeo é processado, nada passa pela OpenAI nem pelo ElevenLabs. A AssemblyAI transcreve, o provedor escolhido na sondagem clona e gera a voz, e o Claude corrige, traduz e julga.
+Quando o vídeo é processado, nada passa pela OpenAI nem pelo ElevenLabs. A AssemblyAI transcreve e gera a voz. O Claude corrige, traduz e julga.
 
-- **Exemplo:** o `.env` precisa só das chaves da AssemblyAI, do provedor de voz e da Anthropic para o vídeo sair dublado.
-- **Por quê:** você não quer OpenAI na transcrição nem ElevenLabs. A AssemblyAI transcreve barato e sabe quem fala; a voz clonada precisa de um provedor que clone pela API; a sua chave da Anthropic cobre o juiz (O5, O6).
+- **Exemplo:** o `.env` precisa só das chaves da AssemblyAI e da Anthropic para o vídeo sair dublado.
+- **Por quê:** você não quer OpenAI na transcrição nem ElevenLabs. A AssemblyAI faz as duas coisas, e a sua chave da Anthropic cobre o juiz (O5, O6).
 - **Como a gente confere:** a pipeline roda com o `.env` sem as chaves da OpenAI e do ElevenLabs.
 - ⚠️ **Vai além do pedido:** a tradução também sai da OpenAI e passa para o Claude, para tradutor e juiz ficarem no mesmo modelo que conhece jiu-jitsu.
 
@@ -116,8 +116,8 @@ Quando você tem um link do YouTube, não precisa baixar o vídeo na mão: na te
 
 ## O que ficou decidido
 
-- Transcrição pela AssemblyAI. Soniox, Azure, xAI, Deepgram e ElevenLabs foram descartados — você, no chat.
-- Voz clonada por um provedor que clone pela API (candidatos: Cartesia, Fish Audio, Inworld; nunca ElevenLabs), escolhido ouvindo a sondagem — você, no chat (2026-11-17), depois de saber que a AssemblyAI só clona pelo painel.
+- Transcrição e voz pela AssemblyAI. Soniox, Azure, xAI, Deepgram e ElevenLabs foram descartados — você, no chat.
+- Voz pronta, sem clone: 2 vozes brasileiras de timbre médio do catálogo da AssemblyAI (196 vozes em português), escolhidas por você na sondagem. O Nelson ficou de fora, porque soa velho demais — você, no chat (2026-11-17).
 - Voz e fundo separados, com o ambiente mantido — você, no chat.
 - Termos como se fala no tatame brasileiro — você, no chat.
 - Fala longa: encurtar a frase, depois acelerar até 15%, e o vídeo nunca muda — você, no chat.
@@ -125,5 +125,5 @@ Quando você tem um link do YouTube, não precisa baixar o vídeo na mão: na te
 - Link do YouTube na tela e num comando de teste — você, no chat (2026-11-17).
 - Entrega: push e PR para `master` — você, no chat.
 - A separação de voz e fundo roda de graça na sua placa de vídeo (Demucs), já que o ElevenLabs saiu — decidido por mim, porque a AssemblyAI não faz essa separação e o Demucs é gratuito.
-- Antes de construir o resto, um teste curto do clone em português, para você ouvir e escolher o provedor — decidido por mim, porque ninguém ouviu esses clones em português ainda.
+- Antes de construir o resto, um teste curto com vozes candidatas, para você ouvir e escolher — decidido por mim, porque a voz da AssemblyAI é nova e ninguém a ouviu em português ainda.
 - Caso extremo do encaixe: se a fala não couber nem depois de encurtar 3 vezes, acelerar 15% e usar o silêncio seguinte, ela termina com um fade-out curto quando a próxima fala começa, e o relatório marca "cortada". Assim a sincronia nunca se perde — decidido por mim, porque é a única saída que respeita o limite de 15% e "nunca por cima da próxima fala". Se aparecer nos vídeos de teste, a gente revê juntos.
