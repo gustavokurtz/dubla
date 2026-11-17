@@ -17,7 +17,13 @@ jest.mock('@anthropic-ai/sdk', () => ({
 
 function respostaDoClaude(parsed: unknown) {
   return {
-    finalMessage: () => Promise.resolve({ stop_reason: 'end_turn', parsed_output: parsed }),
+    finalMessage: () =>
+      Promise.resolve({
+        model: 'claude-opus-5-5',
+        usage: { input_tokens: 1, output_tokens: 1 },
+        stop_reason: 'end_turn',
+        parsed_output: parsed,
+      }),
   };
 }
 

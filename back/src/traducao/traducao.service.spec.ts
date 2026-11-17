@@ -21,7 +21,13 @@ jest.mock('@anthropic-ai/sdk', () => ({
 // O SDK devolve um stream; o serviço só usa finalMessage().
 function respostaDoClaude(parsed: unknown, stopReason = 'end_turn') {
   return {
-    finalMessage: () => Promise.resolve({ stop_reason: stopReason, parsed_output: parsed }),
+    finalMessage: () =>
+      Promise.resolve({
+        model: 'claude-opus-5-5',
+        usage: { input_tokens: 1, output_tokens: 1 },
+        stop_reason: stopReason,
+        parsed_output: parsed,
+      }),
   };
 }
 
