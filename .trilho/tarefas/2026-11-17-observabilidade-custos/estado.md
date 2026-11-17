@@ -1,12 +1,12 @@
 # Estado — Ver quanto custa cada dublagem e acompanhar o processamento de verdade
 
-**Atualizado em:** 2026-11-17
+**Atualizado em:** 2026-11-17 (handoff no meio da fase 3)
 **Etapa:** execucao
 **Último review:** 0711d0d (fase 2) — sem achados ≥ 80
 
 ## Onde paramos
 
-Fases 1 e 2 fechadas. A fase 1 entregou o custo medido por chamada e a troca de modelo: tradutor Sonnet 5.5 high e juiz Haiku 5.5 medium, US$ 0,11 de Claude por vídeo. A fase 2 entregou os jobs em fila na memória (`back/src/jobs/`), as rotas `POST /jobs`, `GET /jobs/:id`, `GET /jobs/:id/eventos` (SSE) e `GET /jobs/:id/video`, e a tela com progresso real. O dev viu o ensaio sem custo andar na tela e baixou o vídeo. Ainda não há banco: reiniciar o back apaga os jobs (o MP4 continua em `dublados/`).
+Fases 1 e 2 fechadas (custo por chamada, Sonnet/Haiku, jobs em fila com progresso real na tela). Na fase 3, o back já está pronto: Postgres local no Docker (`docker compose up -d` na raiz, porta 5433), cada dublagem gravada no banco enquanto anda (job, etapas, chamadas pagas), o que estava rodando quando o back caiu vira `interrompido`, e as rotas `GET /jobs` (histórico), `GET /jobs/:id` e `GET /jobs/:id/video` leem do banco depois de reiniciar. Provado com o servidor de ensaio (custo 0). Falta a parte que o usuário vê: as telas de histórico e trace (T15), e a rodada paga (T16), que é quando aparece o primeiro trace com custo de verdade.
 
 ## Tarefas
 
