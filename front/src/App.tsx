@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect, useRef, type DragEvent, type ChangeEvent } from 'react'
+import { formatarDolar, formatarTempo } from './formato'
+import { Historico, Trace } from './Historico'
 
 const MAX_SIZE = 100 * 1024 * 1024 // 100MB
 
@@ -20,16 +22,11 @@ interface EstadoJob {
   etapas: { nome: string; feito?: number; total?: number }[]
 }
 
-const formatarDolar = (valor: number) =>
-  `US$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-
-function formatarTempo(ms: number) {
-  const s = Math.max(0, Math.floor(ms / 1000))
-  const min = Math.floor(s / 60)
-  return min > 0 ? `${min} min ${s % 60} s` : `${s} s`
-}
+// O que o card mostra: a dublagem (envio e acompanhamento), o histórico ou o trace de uma dublagem.
+type Tela = { tipo: 'dublar' } | { tipo: 'historico' } | { tipo: 'trace'; id: string }
 
 function App() {
+  const [tela, setTela] = useState<Tela>({ tipo: 'dublar' })
   const [status, setStatus] = useState<Status>('idle')
   const [file, setFile] = useState<File | null>(null)
   const [link, setLink] = useState('')
@@ -153,7 +150,17 @@ function App() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/20 p-4">
-      <div className="bg-white/70 backdrop-blur-xl border border-white/90 rounded-2xl shadow-sm p-10 max-w-sm w-full">
+      <div
+        className={`bg-white/70 backdrop-blur-xl border border-white/90 rounded-2xl shadow-sm w-full ${
+          tela.tipo === 'dublar' ? 'p-10 max-w-sm' : 'p-6 sm:p-10 max-w-2xl my-8'
+        }`}
+      >
+        {tela.tipo === 'historico' && (
+          <Historico onAbrir={(id) => setTela({ tipo: 'trace', id })} onVoltar={() => setTela({ tipo: 'dublar' })} />
+        )}
+        {tela.tipo === 'trace' && <Trace id={tela.id} onVoltar={() => setTela({ tipo: 'historico' })} />}
+
+        {tela.tipo === 'dublar' && (<>
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             dubla<span className="text-indigo-500">.</span>
@@ -229,6 +236,13 @@ function App() {
                 Dublar link
               </button>
             )}
+
+            <button
+              onClick={() => setTela({ tipo: 'historico' })}
+              className="block mx-auto text-sm text-indigo-500 hover:text-indigo-600 mt-6 font-medium cursor-pointer"
+            >
+              Ver histórico
+            </button>
           </>
         )}
 
@@ -304,12 +318,20 @@ function App() {
             >
               Baixar vídeo
             </a>
-            <button
-              onClick={reset}
-              className="text-sm text-indigo-500 hover:text-indigo-600 mt-3 font-medium cursor-pointer"
-            >
-              Dublar outro vídeo
-            </button>
+            <div className="flex justify-center gap-5 mt-3">
+              <button
+                onClick={reset}
+                className="text-sm text-indigo-500 hover:text-indigo-600 font-medium cursor-pointer"
+              >
+                Dublar outro vídeo
+              </button>
+              <button
+                onClick={() => setTela({ tipo: 'trace', id: job.id })}
+                className="text-sm text-indigo-500 hover:text-indigo-600 font-medium cursor-pointer"
+              >
+                Ver custos
+              </button>
+            </div>
           </div>
         )}
 
@@ -331,8 +353,17 @@ function App() {
             >
               Tentar novamente
             </button>
+            {job && (
+              <button
+                onClick={() => setTela({ tipo: 'trace', id: job.id })}
+                className="text-sm text-indigo-500 hover:text-indigo-600 mt-3 font-medium cursor-pointer"
+              >
+                Ver custos
+              </button>
+            )}
           </div>
         )}
+        </>)}
       </div>
     </div>
   )

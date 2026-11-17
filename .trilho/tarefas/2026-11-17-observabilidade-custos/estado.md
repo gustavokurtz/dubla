@@ -1,12 +1,12 @@
 # Estado — Ver quanto custa cada dublagem e acompanhar o processamento de verdade
 
-**Atualizado em:** 2026-11-17 (handoff no meio da fase 3)
+**Atualizado em:** 2026-11-17 (T15 feita, T16 esperando o dev)
 **Etapa:** execucao
 **Último review:** 0711d0d (fase 2) — sem achados ≥ 80
 
 ## Onde paramos
 
-Fases 1 e 2 fechadas (custo por chamada, Sonnet/Haiku, jobs em fila com progresso real na tela). Na fase 3, o back já está pronto: Postgres local no Docker (`docker compose up -d` na raiz, porta 5433), cada dublagem gravada no banco enquanto anda (job, etapas, chamadas pagas), o que estava rodando quando o back caiu vira `interrompido`, e as rotas `GET /jobs` (histórico), `GET /jobs/:id` e `GET /jobs/:id/video` leem do banco depois de reiniciar. Provado com o servidor de ensaio (custo 0). Falta a parte que o usuário vê: as telas de histórico e trace (T15), e a rodada paga (T16), que é quando aparece o primeiro trace com custo de verdade.
+Fases 1 e 2 fechadas (custo por chamada, Sonnet/Haiku, jobs em fila com progresso real na tela). Na fase 3, o back já está pronto: Postgres local no Docker (`docker compose up -d` na raiz, porta 5433), cada dublagem gravada no banco enquanto anda (job, etapas, chamadas pagas), o que estava rodando quando o back caiu vira `interrompido`, e as rotas `GET /jobs` (histórico), `GET /jobs/:id` e `GET /jobs/:id/video` leem do banco depois de reiniciar. Provado com o servidor de ensaio (custo 0). As telas de histórico e trace (T15) estão prontas: "Ver histórico" na tela inicial, lista com baixar, detalhe com etapas (tempo e custo), chamadas da Claude, vozes e totais, e "Ver custos" no fim de cada dublagem. Falta a rodada paga (T16), que é quando aparece o primeiro trace com custo de verdade.
 
 ## Tarefas
 
@@ -15,13 +15,13 @@ Fases 1 e 2 fechadas (custo por chamada, Sonnet/Haiku, jobs em fila com progress
 - T12 — feito (migration `inicio` aplicada em localhost:5433; `\dt` mostra Job, Etapa, Chamada)
 - T13 — feito (suíte 112 verde; ensaio contra o Postgres local: dublagem pronta com 7 etapas e 72/72 falas gravadas; back derrubado no meio → `interrompido` com as 2 etapas feitas)
 - T14 — feito (suíte 120 verde; ensaio reiniciado: `GET /jobs` lista os 2 do banco com duração e custo, `GET /jobs/<interrompido>` traz as etapas, vídeo do pronto 200 com 14,6 MB, id inexistente 404)
-- T15 — pendente
-- T16 — pendente
+- T15 — feito (front `tsc -b`, eslint e `pnpm build` verdes; screenshots desktop 1280 e celular 390 do histórico, do trace pronto e do interrompido lidos do Postgres local, e do trace com chamadas pagas por resposta simulada no navegador)
+- T16 — esperando o dev: rodada paga do arm bar pela tela (só com o "pode" dele)
 - Entrega — pendente (verificação, push + PR para master)
 
 ## Próximo passo
 
-T15: telas de histórico e trace no front (skill `frontend-design`, manter o Crisp Glass). Lista: `GET /jobs`; detalhe: `GET /jobs/:id` (mesmo formato do SSE); baixar: `GET /jobs/:id/video`. Situação nova `interrompido`: a etapa aberta (sem `fim`) é onde parou. Para ter dados com custo na tela antes da T16, só o ensaio (custo 0); o primeiro trace com custo real aparece na T16.
+Ler o resultado da T16 (total do trace × painel da Anthropic, histórico depois de reiniciar o back, baixar pelo histórico, `speech_model` da transcrição). Depois: fim da fase 3 (suíte, lint, typecheck, build, code review desde 0711d0d) e entrega.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -65,6 +65,7 @@ T15: telas de histórico e trace no front (skill `frontend-design`, manter o Cri
 - T7: dublagem por link ganha uma etapa extra antes das 7, "Baixando o vídeo", que não conta no "n de 7".
 - T8: a rota síncrona `POST /ingestion/dublar` e o `IngestionController` foram removidos. Job de link usa a URL como nome, então o arquivo baixado sai com nome feio. Ponto em aberto: guardar o título do YouTube no job (dá para fazer na T13, quando o job ganha nome no banco).
 - T9: o card mantém o visual Crisp Glass. A barra é real nas vozes e no encaixe e animada nas outras etapas. Se o SSE fechar sem o job (back reiniciado), a tela mostra erro.
+- T15: sem roteador; `App.tsx` ganhou um estado de tela (dublar, histórico, trace). As telas novas ficam em `front/src/Historico.tsx` e os formatadores em `front/src/formato.ts`. Custo abaixo de 1 centavo aparece com 4 casas (antes virava US$ 0,00). O acompanhamento de uma dublagem continua vivo se você abrir o histórico no meio. Na tela de trace, a barra de cada etapa é proporcional à etapa mais longa.
 - T10: os simulados ficam em `back/scripts/servicos-simulados.ts`, usados por `ensaio-sem-custo.ts` e `servidor-ensaio.ts` (`Test.createTestingModule().overrideProvider`). Na voz, só o `sintetizar` é simulado.
 
 ## Resultado
