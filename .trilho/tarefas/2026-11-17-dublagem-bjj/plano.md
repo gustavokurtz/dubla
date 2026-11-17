@@ -54,7 +54,7 @@ Antes de usar qualquer SDK (assemblyai, @anthropic-ai/sdk, zod), consultar Conte
 
 - **T1** — Sondagem das vozes prontas em PT-BR
   - Atende: R7, R9
-  - Como: pedir ao dev `ASSEMBLYAI_API_KEY` e `ANTHROPIC_API_KEY` no `.env` da raiz e os 2 vídeos de teste (caminho local). Script `back/scripts/sondagem-voz.ts`: gera 5 falas fixas de jiu-jitsu em PT-BR com `aai-nelson` e as mesmas 5 com `aai-benicio`, salva os mp3 em `relatorios/sondagem/`. Os vídeos de teste ficam para T2 em diante.
+  - Como: pedir ao dev `ASSEMBLYAI_API_KEY` e `ANTHROPIC_API_KEY` no `.env` da raiz e os 2 vídeos de teste (caminho local). Script `back/scripts/sondagem-voz.mts`: gera 5 falas fixas de jiu-jitsu em PT-BR com `aai-nelson` e as mesmas 5 com `aai-benicio`, salva os mp3 em `relatorios/sondagem/`. Os vídeos de teste ficam para T2 em diante.
   - Quem roda: dev (ouve e julga; a rodada é paga e pede o "pode")
   - Meta: dev diz que as duas vozes soam naturais (ou que uma serve). Orçamento: 2 rodadas, < US$1. Se esgotar: parar e trazer ao usuário (manter transcrição na AssemblyAI e escolher outro provedor de voz).
 - **T2** — Demucs instalado e serviço de separação

@@ -10,7 +10,7 @@ Planejamento fechado: spec, plano e `.trilho/projeto.md` (trilho-init) commitado
 
 ## Tarefas
 
-- T1 — em andamento (script das vozes prontas; precisa de `ASSEMBLYAI_API_KEY` no `.env`)
+- T1 — esperando o dev: pôr `ASSEMBLYAI_API_KEY` no `.env`, dar o "pode" para a rodada (10 falas, 440 caracteres, ~US$0,01) e ouvir os mp3
 - T2 — pendente
 - T3 — pendente
 - T4 — pendente
@@ -26,7 +26,7 @@ Planejamento fechado: spec, plano e `.trilho/projeto.md` (trilho-init) commitado
 
 ## Próximo passo
 
-T1: escrever `back/scripts/sondagem-voz.ts` (Nelson × Benício, 5 falas cada); pedir `ASSEMBLYAI_API_KEY` e `ANTHROPIC_API_KEY` no `.env`; rodar só com o "pode"; dev ouve e julga. Vídeos de teste (3–5 min, um com 2 pessoas) pedidos para T2.
+Ler o resultado da T1: com a chave no `.env` e o "pode", rodar em `back/`: `node --env-file=../.env --experimental-strip-types scripts/sondagem-voz.mts`; dev ouve `relatorios/sondagem/*.mp3` e julga. Enquanto isso, T2 (Demucs) não depende da T1. Vídeos de teste (3–5 min, um com 2 pessoas) pedidos para T2.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -52,7 +52,7 @@ T1: escrever `back/scripts/sondagem-voz.ts` (Nelson × Benício, 5 falas cada); 
 
 ## Decisões da execução
 
-- nenhuma
+- Scripts em `back/scripts/*.mts`, rodados com TypeScript nativo do Node 22 (`--experimental-strip-types`) + `--env-file`, sem ts-node/dotenv; `scripts` excluído do `tsconfig.build.json` para o `nest build` não mudar o layout do `dist`. `relatorios/` no `.gitignore` da raiz.
 
 ## Resultado
 
