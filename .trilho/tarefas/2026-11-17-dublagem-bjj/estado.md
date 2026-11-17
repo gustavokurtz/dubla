@@ -44,6 +44,7 @@ Fim da fase 3: code review feito; falta (2) rodada real paga do vídeo 1 pelo li
 ## Defeitos
 
 - D1 (rodada real fase 3, 2026-11-17): a dublagem pelo link parou na fala 51 com HTTP 429 da AssemblyAI ("allowance 50 per minute"). Causa imediata: `VozService.sintetizar` (`voz/voz.service.ts`) pedia as 95 vozes em sequência sem ritmo. Desenho: uma chamada de TTS por fala bate no limite por conta/minuto, que nenhum serviço conhecia. Corrigido na causa: `respeitarLimite()` no `VozService` (janela de 61 s, 50 pedidos), compartilhado entre `gerarAudios` e o `sintetizar` do encaixe; teste com timers falsos.
+- D2 (rodada real fase 3, 2ª tentativa, 2026-11-17): parou em "Tradutor devolveu a fala 13 encurtada vazia" (`traducao.service.ts`, `encurtar`). Fala 13 = "you go" → "vai", 0,27 s (33,78–34,05), com 0,85 s de silêncio depois. Causa imediata: a voz não diz nem "vai" em 0,27 s; o encaixe pede encurtar primeiro (ordem da R2) com alvo = 3 chars × 0,27 / duração ≈ 1 char, e o modelo devolve vazio. Desenho: (a) `cortarEmFalas` corta a frase no meio em pausa ≥ 0,4 s e gera falas-fragmento ("Okay," 0,32 s / "you go" 0,27 s / "to Jiu-Jitsu 101…"), menores que qualquer voz; (b) encurtar é sempre o 1º recurso, mesmo quando acelerar + silêncio bastariam — pede ao Claude o impossível e gasta 1 chamada por fala (11 chamadas até a fala 13). Parado para decisão do dev (mexe na R2 e/ou no corte da T4).
 
 ## Aprendizados
 
@@ -59,7 +60,7 @@ Fim da fase 3: code review feito; falta (2) rodada real paga do vídeo 1 pelo li
 - I4 (2026-11-17): `amix` com 301 entradas (fundo + 300 falas, metade com atempo 1,1) num vídeo de 610 s: 25 s de montagem, todas as 300 falas no lugar, desvio máx. 0,0001 s. Sem lotes.
 - T10: no teste, as posições saíram com ±0,01 s (mp3 incluído, o atraso do encoder não pesa).
 
-- Rodada real fase 3, 1ª tentativa (2026-11-17, falhou no D1): YouTube 16 s, Demucs 14,6 s, AssemblyAI 95 falas/1 pessoa em 10 s, tradução 10.640/9.071 tokens, juiz 13.044/5.034, 1 refazer + 1 reavaliação (~6k/~0,5k). Gasto ≈ US$0,45 (Claude) + ~US$0,03 (AssemblyAI). Falha no meio perde tudo o que já foi pago (pipeline em memória, sem retomada): ponto em aberto, sem decisão do dev.
+- Rodada real fase 3, 1ª tentativa (2026-11-17, falhou no D1): YouTube 16 s, Demucs 14,6 s, AssemblyAI 95 falas/1 pessoa em 10 s, tradução 10.640/9.071 tokens, juiz 13.044/5.034, 1 refazer + 1 reavaliação (~6k/~0,5k). Gasto ≈ US$0,45 (Claude) + ~US$0,03 (AssemblyAI). 2ª tentativa (D2): tradução 10.709/8.957, juiz 13.131/5.110, 2 voltas de refazer+juiz (~13k/~2,3k), 11 encurtar (~30,6k/~2,4k); limite de vozes funcionou (esperas de 39 s e 19 s). Gasto ≈ US$0,60. Total fase 3 ≈ US$1,10. Falha no meio perde tudo o que já foi pago (pipeline em memória, sem retomada): ponto em aberto, sem decisão do dev.
 
 ## Hipóteses descartadas
 
