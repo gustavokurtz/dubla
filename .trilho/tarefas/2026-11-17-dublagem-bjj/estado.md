@@ -43,7 +43,7 @@ Fim da fase 3: code review feito; falta (2) rodada real paga do vídeo 1 pelo li
 
 ## Defeitos
 
-- nenhum
+- D1 (rodada real fase 3, 2026-11-17): a dublagem pelo link parou na fala 51 com HTTP 429 da AssemblyAI ("allowance 50 per minute"). Causa imediata: `VozService.sintetizar` (`voz/voz.service.ts`) pedia as 95 vozes em sequência sem ritmo. Desenho: uma chamada de TTS por fala bate no limite por conta/minuto, que nenhum serviço conhecia. Corrigido na causa: `respeitarLimite()` no `VozService` (janela de 61 s, 50 pedidos), compartilhado entre `gerarAudios` e o `sintetizar` do encaixe; teste com timers falsos.
 
 ## Aprendizados
 
@@ -58,6 +58,8 @@ Fim da fase 3: code review feito; falta (2) rodada real paga do vídeo 1 pelo li
 
 - I4 (2026-11-17): `amix` com 301 entradas (fundo + 300 falas, metade com atempo 1,1) num vídeo de 610 s: 25 s de montagem, todas as 300 falas no lugar, desvio máx. 0,0001 s. Sem lotes.
 - T10: no teste, as posições saíram com ±0,01 s (mp3 incluído, o atraso do encoder não pesa).
+
+- Rodada real fase 3, 1ª tentativa (2026-11-17, falhou no D1): YouTube 16 s, Demucs 14,6 s, AssemblyAI 95 falas/1 pessoa em 10 s, tradução 10.640/9.071 tokens, juiz 13.044/5.034, 1 refazer + 1 reavaliação (~6k/~0,5k). Gasto ≈ US$0,45 (Claude) + ~US$0,03 (AssemblyAI). Falha no meio perde tudo o que já foi pago (pipeline em memória, sem retomada): ponto em aberto, sem decisão do dev.
 
 ## Hipóteses descartadas
 

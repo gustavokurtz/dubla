@@ -81,4 +81,22 @@ describe('VozService', () => {
       'Voz da fala 7 falhou: HTTP 422 texto longo demais',
     );
   });
+
+  it('não passa de 50 pedidos por minuto (limite da conta na AssemblyAI)', async () => {
+    jest.useFakeTimers();
+    try {
+      fetchMock.mockImplementation(() => Promise.resolve(respostaOk('mp3')));
+      const falas = Array.from({ length: 51 }, (_, i) => fala(i + 1, 'A', i, i + 1, 'Oi'));
+
+      const pronto = service.gerarAudios(falas);
+      await jest.advanceTimersByTimeAsync(60_000);
+      expect(fetchMock).toHaveBeenCalledTimes(50);
+
+      await jest.advanceTimersByTimeAsync(1_000);
+      await pronto;
+      expect(fetchMock).toHaveBeenCalledTimes(51);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
