@@ -55,7 +55,7 @@ Conventional Commits em inglês, minúsculo, sem escopo, sem ponto final. Exempl
 
 ## Armadilhas
 
-- `pkill -f <padrão>` no Bash mata o próprio shell; parar o back com `kill $(pgrep -f "ts-nod[e] src/main")` (2026-11-17).
+- `pkill -f <padrão>` no Bash mata o próprio shell; parar o back com `kill $(pgrep -f "ts-nod[e].* src/main")` (o `.*` pega também o back subido com `npx ts-node`, que vira `ts-node/dist/bin.js src/main.ts`) (2026-11-17).
 - zsh expande `?` de links: link do YouTube sempre entre aspas no `curl -F 'url=…'` (2026-11-17).
 - AssemblyAI TTS: limite de 50 pedidos/min por conta (o `VozService` já respeita); a voz pronta põe silêncio nas pontas (o `IngestionService` já apara) (2026-11-17).
 - Python das ferramentas (Demucs, yt-dlp): `back/.venv-py` a partir de `back/requirements-python.txt` (comando no README) (2026-11-17).

@@ -18,7 +18,7 @@ Fase 1 fechada (T1–T5, review feito): custo medido por chamada (`back/src/cust
 - T6 — feito (`jobs.service.spec.ts`, 3 testes; suíte 96 verde)
 - T7 — feito (specs de ingestão, voz e encaixe; suíte 100 verde)
 - T8 — feito (`jobs.controller.spec.ts`; suíte 106 verde; back de pé: 404 em job inexistente nas 3 rotas, inclusive SSE, 400 sem vídeo, `/ingestion/dublar` some)
-- T9 — pendente
+- T9 — feito (`pnpm build` verde; prova visual na T10)
 - T10 — pendente
 - T11 — pendente
 - T12 — pendente
@@ -30,7 +30,7 @@ Fase 1 fechada (T1–T5, review feito): custo medido por chamada (`back/src/cust
 
 ## Próximo passo
 
-Fase 2, T9: carregar a skill `frontend-design`; `App.tsx` passa a `POST /api/jobs` + `EventSource('/api/jobs/:id/eventos')` (fechar no `pronto`/`falhou`, senão o EventSource reconecta) e baixa por `/api/jobs/:id/video`. Formato do evento = `GET /jobs/:id` (`JobsController.estado`).
+Fase 2, T10: ensaio sem custo pela tela (back com services simulados rodando pelo job); preparar o comando e entregar ao dev.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -70,6 +70,7 @@ Fase 2, T9: carregar a skill `frontend-design`; `App.tsx` passa a `POST /api/job
 - T6: `JobsService` (`back/src/jobs/`) guarda os jobs num `Map` e a fila num array; `posicao` = quantos vídeos estão antes (0 = dublando ou o próximo). Job de link usa a URL como nome (o título só aparece depois do download). A pasta `dublados/` entra por injeção (`PASTA_DUBLADOS`) para o teste usar um `mkdtemp`. Ainda sem aviso de mudança de situação do job: o SSE da T8 decide o que precisa.
 - T7: dublagem por link tem uma etapa a mais antes das 7, "Baixando o vídeo" (o download leva tempo e sem etapa a tela ficaria parada); a T9 mostra essa etapa sem contar no "n de 7". O log do servidor continua com uma linha por etapa (`IngestionService.etapa`). O encaixe (função pura) avança o trace por `traceAtual()`, como os services.
 - T8: o SSE manda o estado inteiro do job (o mesmo do `GET /jobs/:id`: situação, posição, etapas com custo, chamadas, custo total) a cada evento do trace ou mudança de situação de qualquer job, e completa no `pronto`/`falhou`. Tempo decorrido a tela calcula de `iniciadoEm`. Nome do arquivo baixado: `<nome>-dublado.mp4`; job de link ainda usa a URL como nome (ponto em aberto: guardar o título do YouTube no job).
+- T9: mantido o visual do card (Crisp Glass); só o estado de processamento mudou. Barra real (feito/total) nas vozes e no encaixe, animada nas outras etapas. Download por `<a href=/api/jobs/:id/video download>`. Se o SSE fecha sem o job (back reiniciado), a tela mostra erro em vez de ficar parada.
 - T4: a comparação vai para `relatorios/comparacao-<AAAA-MM-DD-HH-MM>[-simulado].md` (com hora, para a segunda rodada não sobrescrever a primeira).
 
 ## Resultado
