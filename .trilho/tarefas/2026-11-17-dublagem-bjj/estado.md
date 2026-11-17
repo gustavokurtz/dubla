@@ -1,22 +1,22 @@
 # Estado — Dublagem de jiu-jitsu que parece feita por brasileiro
 
-**Atualizado em:** 2026-11-17 02:05
-**Etapa:** execucao
+**Atualizado em:** 2026-11-17 (entrega)
+**Etapa:** concluida
 **Último review:** 326c26e (fase 3 + correções pós-fase, `8d52c38..HEAD`) — 1 achado (82), corrigido
 
 ## Onde paramos
 
-Fase 3 fechada: o vídeo 1 saiu dublado de ponta a ponta pelo link na 3ª rodada real (`videos/Arm-Bar-Danaher-dublado.mp4`, relatório `relatorios/2026-11-17-bjj-moves-arm-bar-from-guard-by-john-danaher.json`, que sobrescreveu o da fase 2). As duas primeiras rodadas falharam (D1, D2), corrigidas na causa, mais correções preventivas pedidas pelo dev. Fase 4 (T12) não começada.
+Tarefa concluída: vídeo 1 aprovado pelo dev sem rodada de ajuste; README reescrito; merge na `master`.
 
 ## Tarefas
 
 - T0–T11, T13 — feito
-- T12 — pendente (fase 4: dev assiste e julga; rodada paga pede o "pode")
-- Entrega — pendente (verificação, push + PR para `master`)
+- T12 — feito (dev assistiu `videos/Arm-Bar-Danaher-dublado.mp4` e aprovou: "gostei sim parece ok, aprovo"; 0 rodadas de ajuste)
+- Entrega — feito (verificação, README, push + PR, merge na `master` a pedido do dev)
 
 ## Próximo passo
 
-T12 rodada 1 (`Quem roda: dev`): pedir ao dev que assista `videos/Arm-Bar-Danaher-dublado.mp4` e diga se parece nativo, termos certos e sincronizado; mostrar o relatório (72 falas, 57 ok / 12 aceleradas / 3 avançaram / 0 cortadas, 1 encurtada, juiz 71+1 aprovadas, maior desvio de início 0). Junto, levar os pontos em aberto abaixo. Orçamento da fase 4: 4 rodadas, < US$5 no total (nada gasto ainda na fase 4). Hipótese em uma linha antes de cada ajuste; produto e régua em commits separados.
+Nenhum. Pontos em aberto abaixo ficam para uma tarefa futura, se o dev quiser.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -70,4 +70,8 @@ T12 rodada 1 (`Quem roda: dev`): pedir ao dev que assista `videos/Arm-Bar-Danahe
 
 ## Resultado
 
-Preencher na entrega.
+- Pipeline nova por fala (Demucs → AssemblyAI → Claude tradutor + juiz → voz por pessoa → encaixe → mixagem) no `POST /ingestion/dublar`, por arquivo ou link do YouTube (tela também). OpenAI e ElevenLabs removidos.
+- Testes: 19 suítes, 70 testes verdes; lint (back e front), typecheck e `pnpm build` verdes na entrega.
+- Reviews: fase 1, 2 e 3 sem achados ≥ 80; review das correções pós-fase 3: 1 achado (alvo do encurtar), corrigido em `99d0e64`.
+- Rodadas reais: fase 2 ≈ US$0,40; fase 3: 3 rodadas ≈ US$1,45 (2 falharam: D1, D2); fase 4: nenhuma (aprovado na rodada da fase 3).
+- Fora do escopo / em aberto: "juji gatame" × "armlock" e "Ó," no guia; falha no meio perde o que foi pago; tradução numa chamada só limita ~35 min de vídeo; relatório não marca voz repetida (3+ pessoas, só no log); progresso da tela é cíclico; custo/resumo não aparecem na tela; opções de baratear (cache de prompt, encurtar em lote, Sonnet no juiz) sem decisão.

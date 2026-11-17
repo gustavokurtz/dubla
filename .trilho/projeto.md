@@ -43,6 +43,8 @@ Conventional Commits em inglês, minúsculo, sem escopo, sem ponto final. Exempl
 
 ## Regras fixas
 
+- Antes de rodada real paga que mude a pipeline, rodar o ensaio sem custo (`back/scripts/ensaio-sem-custo.ts`, ver README/estado da dublagem-bjj) e corrigir o que ele mostrar: o dev é sensível a custo ("não tô rico") (2026-11-17).
+
 - Chamadas a APIs pagas (AssemblyAI, Anthropic) em teste automatizado são sempre mockadas. Rodada real só com o "pode" do usuário na sessão.
 - Nunca commitar `.env` nem chaves.
 
@@ -52,6 +54,11 @@ Conventional Commits em inglês, minúsculo, sem escopo, sem ponto final. Exempl
 - Serviços externos pagos: AssemblyAI (`ASSEMBLYAI_API_KEY`), Anthropic (`ANTHROPIC_API_KEY`). Avisar antes de qualquer rodada real.
 
 ## Armadilhas
+
+- `pkill -f <padrão>` no Bash mata o próprio shell; parar o back com `kill $(pgrep -f "ts-nod[e] src/main")` (2026-11-17).
+- zsh expande `?` de links: link do YouTube sempre entre aspas no `curl -F 'url=…'` (2026-11-17).
+- AssemblyAI TTS: limite de 50 pedidos/min por conta (o `VozService` já respeita); a voz pronta põe silêncio nas pontas (o `IngestionService` já apara) (2026-11-17).
+- Python das ferramentas (Demucs, yt-dlp): `back/.venv-py` a partir de `back/requirements-python.txt` (comando no README) (2026-11-17).
 
 - Ferramentas Python (yt-dlp, demucs) ficam em `back/.venv-py`, criado com `uv` (`~/.local/bin/uv`): `python3 -m venv` falha porque o sistema não tem `python3.12-venv` (2026-11-17).
 - `pnpm` global é 11.x; o projeto usa 10.32.1, fixado em `packageManager` no `package.json` da raiz (o 11 troca sozinho para a 10.32.1 ali dentro). Sem isso o 11 recusava a store v10 (`ERR_PNPM_UNEXPECTED_STORE`) e pacotes publicados há menos de 1 dia (`ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`) (2026-11-17).
