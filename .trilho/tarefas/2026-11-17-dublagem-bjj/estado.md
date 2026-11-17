@@ -2,7 +2,7 @@
 
 **Atualizado em:** 2026-11-17 (T8)
 **Etapa:** execucao
-**Último review:** 2c274a9 (fase 2, T5–T7) — sem achados ≥ 80
+**Último review:** 8bccc56 (fase 3, T8–T11, T13) — sem achados ≥ 80
 
 ## Onde paramos
 
@@ -28,7 +28,7 @@ Fases 1 e 2 fechadas. Fase 3 em curso: Todas as tarefas da fase 3 feitas (T8–T
 
 ## Próximo passo
 
-Fim da fase 3: (1) code review da fase (base `2c274a9`); (2) rodada real paga do vídeo 1 pelo link (pedir o "pode"; estimativa US$0,50–1,50); (3) handoff.
+Fim da fase 3: code review feito; falta (2) rodada real paga do vídeo 1 pelo link (pedir o "pode"; estimativa US$0,50–1,50); (3) handoff.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
