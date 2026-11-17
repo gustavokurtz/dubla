@@ -12,8 +12,8 @@ T0 feito (download do YouTube). Voz voltou para vozes prontas da AssemblyAI (sem
 
 - T0 — feito (4 testes verdes; download real de um vídeo público de 19 s em ~3 s, H.264 + AAC em `videos/`)
 - T1 — feito (dev escolheu `aai-cassio` = voz 1, pessoa que mais fala; `aai-benicio` = voz 2)
-- T2 — esperando o dev: ouvir `relatorios/separacao/{audio.mp3,voz.wav,fundo.wav}` (fundo sem voz?); medir tempo no vídeo real de 3–5 min (I2)
-- T3 — feito (97 termos + guia do tatame em `back/src/traducao/guia-bjj.ts`; teste do limite da AssemblyAI verde; leitura do dev fica para o fim da fase 1)
+- T2 — feito (dev: "ouvi ta ok"; I2: 14,7 s para 4:45 de vídeo, VRAM máx 2,5 GB)
+- T3 — feito (97 termos + guia; dev: "guia ta bom")
 - T4 — feito (`TranscricaoService` + `cortarEmFalas`, 10 testes verdes; rodada real fica para a fase 3)
 - T5 — pendente
 - T6 — pendente
@@ -67,6 +67,9 @@ Fechar a fase 1: falta o dev ouvir `relatorios/separacao/` (T2) e ler o guia (`b
 - decidido (2026-11-17): "Só local por enquanto" — sem deploy no escopo; Demucs e yt-dlp locais. Se for pro ar: trocar `SeparacaoService` pelo Replicate (um arquivo) e contar com bloqueio do YouTube em IP de nuvem.
 - Venv `back/.venv-py` com torch 2.11.0+cu128 + demucs + soundfile: 6,7 GB; CUDA ok na RTX 4050.
 - Demucs (htdemucs, `--two-stems=vocals`) em "Me at the zoo" (19 s): 9,8 s incluindo carregar o modelo, VRAM 1,5 → 2,4 GB. Volumes médios: original −24,4 dB, voz −25,0 dB, fundo −19,1 dB (vídeo com vento/ambiente forte). Qualidade só se confere ouvindo.
+
+- Vídeo de teste (R11): https://www.youtube.com/watch?v=pQ43Oy5k9yQ — "BJJ Moves: Arm Bar From Guard by John Danaher", 4:45, 720p H.264, baixado em `videos/BJJ-Moves-Arm-Bar-From-Guard-by-John-Danaher.mp4`.
+- I2 resolvida: Demucs no vídeo de teste (285 s) levou 14,7 s (~0,05× a duração), VRAM máx 2,5 GB de 6 GB.
 
 ## Hipóteses descartadas
 
