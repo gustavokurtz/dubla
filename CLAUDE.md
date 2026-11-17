@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Dubla** is a video dubbing pipeline. It accepts a video file, extracts audio, transcribes it with OpenAI Whisper, translates the transcription to Brazilian Portuguese using GPT-4o-mini, generates speech with ElevenLabs TTS, and reassembles the video with the dubbed audio track synchronized to the original timestamps.
+**Dubla** dubs Brazilian Jiu-Jitsu instructional videos into Brazilian Portuguese. It accepts a video file, separates voice from background (Demucs), transcribes with speaker labels and word timings (AssemblyAI), corrects and translates each line with Claude (plus a separate Claude judge), synthesizes each line with a fixed voice per speaker (AssemblyAI TTS), fits each dubbed line into its original time slot, and remixes it over the original background.
 
 This is a **monorepo** with two workspaces:
 - `back/` — NestJS backend (API + pipeline)
@@ -31,28 +31,33 @@ pnpm --filter dubla run format       # Prettier formatting
 ## Environment Variables
 
 Requires a `.env` file at the **project root** (not inside `back/`) with:
-- `OPENAI_API_KEY` — OpenAI API key (used for Whisper transcription and GPT translation)
-- `ELEVENLABS_API_KEY` — ElevenLabs API key (used for TTS voice generation)
+- `ASSEMBLYAI_API_KEY` — transcription (speaker labels, word timings) and TTS
+- `ANTHROPIC_API_KEY` — translation and judge (Claude)
+- `FERRAMENTAS_PYTHON` (optional) — Python with `demucs` and `yt-dlp`; defaults to `back/.venv-py/bin/python` (created with `uv`, see `.trilho/projeto.md`)
 
 `ConfigModule` is loaded globally with `envFilePath: path.join(process.cwd(), '..', '.env')` so it reads from the root.
 
 ## Architecture
 
-The app is a **5-step pipeline** orchestrated by the `IngestionService`:
+`IngestionService.dublar(video, nome)` runs the pipeline:
 
-1. **FfmpegService** — Extracts audio from uploaded video (MP3 via fluent-ffmpeg)
-2. **OpenaiService** — Transcribes audio into timed segments using Whisper (`verbose_json` with segment timestamps)
-3. **OpenaiService** — Translates all segments from English to PT-BR using GPT-4o-mini in a single batch prompt
-4. **ElevenlabsService** — Generates TTS audio for each translated segment sequentially (voice: `JBFqnCBsd6RMkjVDRZzb` / George, model: `eleven_multilingual_v2`)
-5. **FfmpegService** — Reassembles video by delaying each dubbed audio segment to its original timestamp using ffmpeg's `adelay` + `amix` complex filter, then muxing with the original video stream (copy codec)
+1. **FfmpegService.extrairAudio** — MP3 of the video
+2. **SeparacaoService** — Demucs (`htdemucs`, two stems) splits voice and background
+3. **TranscricaoService** — AssemblyAI with speaker labels and the BJJ term list; `cortarEmFalas` cuts words into lines ("falas": one speaker, sentence end or pause ≥ 0.4 s, max ~12 s)
+4. **TraducaoService + JuizService** — one Claude call corrects the English and translates the whole video (character budget per line); the judge reviews each line, rejected lines go back to the translator up to 2 times (`revisarComJuiz`)
+5. **VozService** — AssemblyAI TTS per line; the speaker who talks most gets `aai-cassio`, the second `aai-benicio` (`atribuirVozes`)
+6. **encaixarFalas / planejarEncaixe** — fits each line into its slot: shorten (Claude) → speed up ≤ 15% (`atempo`) → run over the following silence → after 3 shortenings, cut at the next line with a fade
+7. **FfmpegService.montarVideo** — each line delayed to its original start (`adelay`) and mixed over the background (`amix normalize=0`); video stream copied, duration = the video's
+
+A JSON report per video (speaker, English, Portuguese, judge verdict, original vs. dubbed start, shortened/accelerated/cut) is written to `relatorios/` at the root.
 
 ### Backend module structure (`back/`)
 
-- **IngestionModule** — Orchestrator. Imports Ffmpeg, OpenAI, and ElevenLabs modules. Exposes `POST /ingestion/dublar` (multipart file upload, field name `video`, max 100MB, video/* only). Returns the dubbed MP4 as a download.
-- **FfmpegModule** — Audio extraction and video reassembly using temp directories (`mkdtemp`). All temp files are cleaned up in `finally` blocks.
-- **OpenaiModule** — Whisper transcription and GPT translation. Uses `openai` SDK.
-- **ElevenlabsModule** — Text-to-speech via `@elevenlabs/elevenlabs-js` SDK.
-- **shared/types.ts** — `Segmento` (start, end, texto) and `SegmentoComAudio` (adds audio Buffer) interfaces used across modules.
+- **IngestionModule** — Orchestrator. Exposes `POST /ingestion/dublar` (multipart, field `video`, max 100MB, video/* only). Returns the dubbed MP4.
+- **FfmpegModule**, **SeparacaoModule**, **TranscricaoModule**, **TraducaoModule** (translator, judge, BJJ guide in `guia-bjj.ts`), **VozModule**, **YoutubeModule** (yt-dlp download).
+- `src/encaixe/` and `src/relatorio/` — pure functions (fit planning, report).
+- **shared/types.ts** — `Fala`, `FalaTraduzida`, `FalaRevisada`, `EncaixeDaFala`.
+- `back/scripts/` — manual scripts (download a video, voice probe, translate + judge a local video). Paid APIs: run only on purpose.
 
 ### Frontend (`front/`)
 
@@ -60,7 +65,8 @@ Single-page React + Vite + Tailwind CSS v4 app. One component (`App.tsx`) with 4
 
 ### Key design decisions
 
-- All processing is in-memory using Buffers (no persistent storage).
-- FfmpegService uses OS temp directories for intermediate files required by ffmpeg CLI, cleaned up after each operation.
+- All processing is in-memory using Buffers; the only persisted file is the diagnostic report in `relatorios/`.
+- Services that call ffmpeg/demucs use OS temp directories (`mkdtemp`), cleaned up in `finally`.
+- Rules with a single right answer (cutting lines, judge retry limit, fitting) are code, not LLM.
 - The codebase uses Portuguese for domain terminology (method names, log messages, variable names).
 - Package manager is **pnpm** with workspaces (`pnpm-workspace.yaml`). Lockfile at root.

@@ -1,0 +1,7 @@
+# Python tools called by the backend (Demucs voice/background split, yt-dlp download).
+# Install into back/.venv-py — see README "Python tools".
+torch==2.11.0
+torchaudio==2.11.0
+demucs==4.1.0
+soundfile==0.14.0
+yt-dlp==2026.10.26

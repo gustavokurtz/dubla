@@ -7,3 +7,34 @@ export interface Segmento {
 export interface SegmentoComAudio extends Segmento {
   audio: Buffer;
 }
+
+// Trecho contínuo de uma pessoa, cortado a partir das palavras com tempo.
+export interface Fala {
+  id: number;
+  pessoa: string; // rótulo da AssemblyAI: 'A', 'B', ...
+  inicio: number; // em segundos
+  fim: number;
+  textoEn: string;
+}
+
+// Fala depois da tradução: inglês corrigido (R4) e português para a voz (R5).
+export interface FalaTraduzida extends Fala {
+  textoEnCorrigido: string;
+  textoPt: string;
+}
+
+// Fala depois do juiz (R6): veredito final e em qual tentativa saiu.
+export interface FalaRevisada extends FalaTraduzida {
+  juiz: 'aprovada' | 'reprovada';
+  tentativas: number;
+  motivoJuiz?: string; // último motivo de reprovação, quando reprovada
+}
+
+// Como a fala dublada coube no tempo (R1, R2). Preenchido na fase de encaixe.
+export interface EncaixeDaFala {
+  acao: 'ok' | 'encurtar' | 'acelerar' | 'avancar' | 'cortar';
+  atempo: number; // 1 = velocidade normal
+  inicioDublado: number; // em segundos
+  fimDublado: number;
+  encurtamentos: number; // quantas vezes o tradutor encurtou
+}

@@ -60,3 +60,10 @@ dist/
 
 # Superpowers
 .superpowers/
+
+# Relatórios e sondagens da dublagem
+relatorios/
+videos/
+
+# Venv das ferramentas Python (yt-dlp, demucs)
+back/.venv-py/
