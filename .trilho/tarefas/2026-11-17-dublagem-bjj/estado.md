@@ -6,7 +6,7 @@
 
 ## Onde paramos
 
-Fase 1 fechada. Fase 2: T5, T6 e T7 feitas. Suíte (só as 6 vermelhas preexistentes), lint/typecheck e code review feitos (sem achados). Falta a rodada real de tradução + juiz no vídeo 1, que espera o "pode" do dev.
+Fase 1 fechada. Fase 2: T5, T6 e T7 feitas. Suíte (só as 6 vermelhas preexistentes), lint/typecheck e code review feitos (sem achados). Rodada real feita (96 falas, ~US$0,40); esperando o dev olhar os termos no relatório para fechar a fase.
 
 ## Tarefas
 
@@ -28,7 +28,7 @@ Fase 1 fechada. Fase 2: T5, T6 e T7 feitas. Suíte (só as 6 vermelhas preexiste
 
 ## Próximo passo
 
-Rodada real da fase 2, com o "pode" do dev (estimativa US$0,30–0,60): `cd back && node --env-file=../.env -r ts-node/register scripts/traduzir-video.ts ../videos/BJJ-Moves-Arm-Bar-From-Guard-by-John-Danaher.mp4`. Registrar tokens/custo e as observações do dev sobre os termos; depois handoff para a fase 3.
+Esperando o dev: ler `relatorios/2026-11-17-bjj-moves-arm-bar-from-guard-by-john-danaher.json` (ou o log) e dizer se os termos e o registro estão bons. Ajuste de guia/prompt fica para a T12, salvo algo grave. Com o ok dele: fechar a fase 2 e fazer o handoff para a fase 3 (T8).
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -49,6 +49,7 @@ Rodada real da fase 2, com o "pode" do dev (estimativa US$0,30–0,60): `cd back
 - Suíte do back: as 6 specs vermelhas são as preexistentes (openai, elevenlabs, ingestion — falta `ConfigService` no módulo de teste); somem/viram verdes na T11. As 5 suítes novas (18 testes) verdes. Lint: os mesmos 8 erros preexistentes; arquivos novos limpos.
 - AssemblyAI TTS: `POST https://tts.us.assemblyai.com/v1/speech` (`text` ≤ 5000, `voice_id`, `language: portuguese`, `encoding: mp3`, `stream: false`, chave crua em `Authorization`); `speed` só aceita 1, então velocidade fica no ffmpeg (`atempo`). Catálogo: `GET /v1/voices?scope=public&limit=100` paginado por `next_cursor` — 4073 vozes com `language` e `tags` (`accent:`, `age:`, `gender:`); 196 em português. Clone só pelo painel (por isso descartado).
 - AssemblyAI transcrição: `keyterms_prompt` máx. 100 termos / 8000 chars (sync: 2048 chars); nossa lista tem 97 termos / 1070 chars. Modelo padrão aceita keyterms.
+- Rodada real fase 2 (vídeo 1, 2026-11-17): AssemblyAI achou 96 falas de 1 pessoa (correto: o parceiro não fala). Claude: tradução 10.708 in / 9.235 out; juiz 13.121 / 3.519; 1 refazer + 1 reavaliação ~3k / ~100. Total ≈ US$0,38 Claude + ~US$0,02 AssemblyAI. Tempo: ~2 min. Juiz: 95 aprovadas de primeira, 1 na 2ª (fala 43), 0 reprovadas. Correção do inglês (R4) funcionou: "jiu-jitsu gatame"/"judo gatame" → "juji gatame", "arm bars" → "armbars", "keynote themes" → "key themes". Tradução sai bem enxuta (perto do alvo de chars).
 - Sondagens pagas feitas: vozes rodada 1 (838 chars) e rodada 2 (3352 chars), total < US$0,07. Áudios em `relatorios/sondagem/`.
 - Demucs: ~0,05× a duração do vídeo na RTX 4050 (inclui carregar o modelo).
 - `pkill -f <padrão>` dentro do Bash mata o próprio shell (o padrão está na linha de comando dele): usar `timeout N <cmd> &` para processos auxiliares.
