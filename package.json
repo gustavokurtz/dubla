@@ -7,5 +7,6 @@
     "dev:front": "pnpm --filter dubla-front run dev",
     "build": "pnpm -r run build",
     "lint": "pnpm -r run lint"
-  }
+  },
+  "packageManager": "pnpm@10.32.1"
 }

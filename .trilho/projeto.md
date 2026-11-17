@@ -54,4 +54,4 @@ Conventional Commits em inglês, minúsculo, sem escopo, sem ponto final. Exempl
 ## Armadilhas
 
 - Ferramentas Python (yt-dlp, demucs) ficam em `back/.venv-py`, criado com `uv` (`~/.local/bin/uv`): `python3 -m venv` falha porque o sistema não tem `python3.12-venv` (2026-11-17).
-- `pnpm` global é 11.x e o projeto foi instalado com 10.32.1 (store v10): o 11 recusa com `ERR_PNPM_UNEXPECTED_STORE`. Para adicionar dependência: `npx -y pnpm@10.32.1 --filter dubla add <pacote>` na raiz (2026-11-17).
+- `pnpm` global é 11.x; o projeto usa 10.32.1, fixado em `packageManager` no `package.json` da raiz (o 11 troca sozinho para a 10.32.1 ali dentro). Sem isso o 11 recusava a store v10 (`ERR_PNPM_UNEXPECTED_STORE`) e pacotes publicados há menos de 1 dia (`ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`) (2026-11-17).
