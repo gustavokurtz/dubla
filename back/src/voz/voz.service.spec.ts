@@ -99,4 +99,44 @@ describe('VozService', () => {
       jest.useRealTimers();
     }
   });
+
+  it('erro que a API marca como passageiro: espera o tempo pedido e tenta de novo', async () => {
+    jest.useFakeTimers();
+    try {
+      const passageiro = JSON.stringify({ retryable: true, retry_after_seconds: 3 });
+      fetchMock
+        .mockResolvedValueOnce({ ok: false, status: 503, text: () => Promise.resolve(passageiro) })
+        .mockResolvedValueOnce(respostaOk('mp3'));
+
+      const pronto = service.gerarAudios([fala(1, 'A', 0, 1, 'Oi')]);
+      await jest.advanceTimersByTimeAsync(2_900);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(100);
+
+      expect((await pronto)[0].audio.toString()).toBe('mp3');
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('erro passageiro 3 vezes seguidas: desiste com o erro da API', async () => {
+    jest.useFakeTimers();
+    try {
+      const passageiro = JSON.stringify({ retryable: true, retry_after_seconds: 1 });
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 503,
+        text: () => Promise.resolve(passageiro),
+      });
+
+      const pronto = service.gerarAudios([fala(4, 'A', 0, 1, 'Oi')]);
+      const falhou = expect(pronto).rejects.toThrow('Voz da fala 4 falhou: HTTP 503');
+      await jest.advanceTimersByTimeAsync(5_000);
+      await falhou;
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
