@@ -107,13 +107,13 @@ Quando a pipeline estiver pronta, você assiste a 2 vídeos curtos escolhidos po
 
 ## O que ficou decidido
 
-- Transcrição e voz pela AssemblyAI (também clona voz). Soniox, Azure, xAI, Deepgram e ElevenLabs foram descartados — você, no chat.
-- Voz clonada de cada pessoa do vídeo — você, no chat.
+- Transcrição e voz pela AssemblyAI. Soniox, Azure, xAI, Deepgram e ElevenLabs foram descartados — você, no chat.
+- Vozes prontas da AssemblyAI (Nelson e Benício), sem clone — você, no chat (2026-11-17), porque a AssemblyAI só cria clone pelo painel do site.
 - Voz e fundo separados, com o ambiente mantido — você, no chat.
 - Termos como se fala no tatame brasileiro — você, no chat.
 - Fala longa: encurtar a frase, depois acelerar até 15%, e o vídeo nunca muda — você, no chat.
 - Meta: 2 vídeos, até 4 rodadas, menos de US$5 — você, no chat.
 - Entrega: push e PR para `master` — você, no chat.
 - A separação de voz e fundo roda de graça na sua placa de vídeo (Demucs), já que o ElevenLabs saiu — decidido por mim, porque a AssemblyAI não faz essa separação e o Demucs é gratuito.
-- Antes de construir o resto, um teste curto da voz clonada em português, para você ouvir — decidido por mim, porque a voz da AssemblyAI é nova (outubro de 2026) e ninguém a ouviu em português ainda. Se não soar natural, você decide a troca antes de investirmos no resto.
+- Antes de construir o resto, um teste curto das vozes prontas em português, para você ouvir — decidido por mim, porque a voz da AssemblyAI é nova (outubro de 2026) e ninguém a ouviu em português ainda. Se não soar natural, você decide a troca antes de investirmos no resto.
 - Caso extremo do encaixe: se a fala não couber nem depois de encurtar 3 vezes, acelerar 15% e usar o silêncio seguinte, ela termina com um fade-out curto quando a próxima fala começa, e o relatório marca "cortada". Assim a sincronia nunca se perde — decidido por mim, porque é a única saída que respeita o limite de 15% e "nunca por cima da próxima fala". Se aparecer nos vídeos de teste, a gente revê juntos.
