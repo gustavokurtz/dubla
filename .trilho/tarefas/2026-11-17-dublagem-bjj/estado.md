@@ -13,7 +13,7 @@ T0 feito (download do YouTube). Voz voltou para vozes prontas da AssemblyAI (sem
 - T0 — feito (4 testes verdes; download real de um vídeo público de 19 s em ~3 s, H.264 + AAC em `videos/`)
 - T1 — feito (dev escolheu `aai-cassio` = voz 1, pessoa que mais fala; `aai-benicio` = voz 2)
 - T2 — esperando o dev: ouvir `relatorios/separacao/{audio.mp3,voz.wav,fundo.wav}` (fundo sem voz?); medir tempo no vídeo real de 3–5 min (I2)
-- T3 — pendente
+- T3 — em andamento
 - T4 — pendente
 - T5 — pendente
 - T6 — pendente
@@ -64,6 +64,7 @@ Ler o resultado da T2 (dev ouve o fundo). Seguir com T3 (guia BJJ) e T4 (transcr
 - Sondagem T1 rodada 2 (2026-11-17, "pode seguir" do usuário): 8 vozes × 5 falas, 3352 caracteres (~US$0,05).
 
 - decidido (2026-11-17): separação com Demucs local ("vai de 1 local"), depois de ver a opção Replicate (~US$0,015–0,02/vídeo, preço não confirmado) e a de ficar sem fundo.
+- decidido (2026-11-17): "Só local por enquanto" — sem deploy no escopo; Demucs e yt-dlp locais. Se for pro ar: trocar `SeparacaoService` pelo Replicate (um arquivo) e contar com bloqueio do YouTube em IP de nuvem.
 - Venv `back/.venv-py` com torch 2.11.0+cu128 + demucs + soundfile: 6,7 GB; CUDA ok na RTX 4050.
 - Demucs (htdemucs, `--two-stems=vocals`) em "Me at the zoo" (19 s): 9,8 s incluindo carregar o modelo, VRAM 1,5 → 2,4 GB. Volumes médios: original −24,4 dB, voz −25,0 dB, fundo −19,1 dB (vídeo com vento/ambiente forte). Qualidade só se confere ouvindo.
 
