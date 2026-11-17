@@ -1,12 +1,12 @@
 # Estado — Dublagem de jiu-jitsu que parece feita por brasileiro
 
-**Atualizado em:** 2026-11-17 01:10
+**Atualizado em:** 2026-11-17 (T8)
 **Etapa:** execucao
 **Último review:** 2c274a9 (fase 2, T5–T7) — sem achados ≥ 80
 
 ## Onde paramos
 
-Fases 1 e 2 fechadas. A fase 2 (tradutor, juiz, relatório) passou pela rodada real no vídeo 1 (96 falas, ~US$0,40) e o dev mandou fechar. Nada da fase 3 começado.
+Fases 1 e 2 fechadas. Fase 3 em curso: T8 (voz de cada pessoa) feita, T9 a seguir.
 
 ## Tarefas
 
@@ -18,7 +18,7 @@ Fases 1 e 2 fechadas. A fase 2 (tradutor, juiz, relatório) passou pela rodada r
 - T5 — feito (`back/src/traducao/traducao.service.ts`; 5 testes)
 - T6 — feito (`juiz.service.ts`, `revisar-com-juiz.ts`, `TraducaoService.refazer`; 7 testes novos)
 - T7 — feito (`back/src/relatorio/relatorio.ts`; 3 testes)
-- T8 — pendente
+- T8 — feito (`back/src/voz/`; 5 testes)
 - T9 — pendente
 - T10 — pendente
 - T11 — pendente
@@ -28,7 +28,7 @@ Fases 1 e 2 fechadas. A fase 2 (tradutor, juiz, relatório) passou pela rodada r
 
 ## Próximo passo
 
-T8 (voz de cada pessoa): função pura `atribuirVozes(falas, vozes)` e `VozService` em `back/src/voz/` chamando `POST /v1/speech` da AssemblyAI com `fetch` (detalhes da API em "Aprendizados"; slugs `aai-cassio`, `aai-benicio`). Referência de chamada real já pronta: `back/scripts/sondagem-voz.mts`. Testes com `fetch` mockado; nada pago na T8.
+T9 (encaixe no tempo): função pura `planejarEncaixe(fala, duracaoAudio, inicioProximaFala)` com os casos do plano; usa o tipo `EncaixeDaFala` já criado em `shared/types.ts`.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -73,6 +73,8 @@ T8 (voz de cada pessoa): função pura `atribuirVozes(falas, vozes)` e `VozServi
 - T5: `@anthropic-ai/sdk` 1.9.0 + `zod` 4.6.7. Chamada via `client.beta.messages.stream` (o beta é exigido por `fallbacks: 'default'`) com `output_config: { effort: 'high', format: betaZodOutputFormat(schema) }`, `max_tokens` 64000; `stop_reason` diferente de `end_turn` ou `parsed_output` nulo é erro explícito. Entrada ao modelo: JSON com `id`, `pessoa`, `duracaoSegundos`, `alvoCaracteres` (duração × 14), `textoEn`. Tipo `FalaTraduzida` em `shared/types.ts`. `TraducaoModule` ainda não importado (entra na T11).
 - T6: chamada ao Claude extraída para `traducao/claude.ts` (`chamarClaude`), usada por tradutor e juiz. `refazer` manda só as reprovadas (com `textoPtReprovado` e `motivoDoJuiz`), sem o resto do vídeo. Juiz reavalia só as refeitas. "Melhor versão" da spec = última versão (o juiz é binário, não ranqueia). Tipo `FalaRevisada` (`juiz`, `tentativas`, `motivoJuiz`) em `shared/types.ts`; `JuizService` no `TraducaoModule`.
 - T7: `montarRelatorio` (puro), `linhaDaFala` (linha do log no formato do exemplo da spec R10) e `gravarRelatorio(relatorio, pasta, data)` em `back/src/relatorio/relatorio.ts`. Tipo `EncaixeDaFala` criado em `shared/types.ts` antes da T9 (campos opcionais no relatório; a T9 produz). Fala sem encaixe conta em `semDados`; `maiorDesvioInicio` é `null` sem dados.
+
+- T8: `atribuirVozes(falas, vozes)` em `voz/atribuir-vozes.ts` devolve `{ [pessoa]: { voz, repetida } }` (ordem por tempo total de fala). `VozService.gerarAudios(falas)` gera em sequência e devolve `{ id, voz, audio }`; `sintetizar(id, texto, voz)` é pública para o encaixe regerar a fala depois de encurtar. `VOZES_PT` em `voz/voz.service.ts`. `VozModule` ainda não importado (T11).
 
 ## Resultado
 
