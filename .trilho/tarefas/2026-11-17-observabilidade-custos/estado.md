@@ -16,12 +16,12 @@ Fases 1 e 2 fechadas (custo por chamada, Sonnet/Haiku, jobs em fila com progress
 - T13 — feito (suíte 112 verde; ensaio contra o Postgres local: dublagem pronta com 7 etapas e 72/72 falas gravadas; back derrubado no meio → `interrompido` com as 2 etapas feitas)
 - T14 — feito (suíte 120 verde; ensaio reiniciado: `GET /jobs` lista os 2 do banco com duração e custo, `GET /jobs/<interrompido>` traz as etapas, vídeo do pronto 200 com 14,6 MB, id inexistente 404)
 - T15 — feito (front `tsc -b`, eslint e `pnpm build` verdes; screenshots desktop 1280 e celular 390 do histórico, do trace pronto e do interrompido lidos do Postgres local, e do trace com chamadas pagas por resposta simulada no navegador)
-- T16 — esperando o dev: rodada paga do arm bar pela tela (só com o "pode" dele)
+- T16 — feito (rodada paga do usuário: guillotine do Giancarlo Bodoni por link, job 3a838efd, 11 min 20 s de áudio, ~10 min, US$ 0,57 = Claude 0,39 + AssemblyAI 0,18; histórico e download funcionaram depois de reiniciar o back). Conferência com o painel da Anthropic pendente, ver Aprendizados
 - Entrega — pendente (verificação, push + PR para master)
 
 ## Próximo passo
 
-Ler o resultado da T16 (total do trace × painel da Anthropic, histórico depois de reiniciar o back, baixar pelo histórico, `speech_model` da transcrição). Depois: fim da fase 3 (suíte, lint, typecheck, build, code review desde 0711d0d) e entrega.
+Fim da fase 3 (suíte, lint, typecheck, build, code review desde 0711d0d) e entrega para master.
 
 ## O que o usuário decidiu e não está na spec nem no plano
 
@@ -54,6 +54,9 @@ Ler o resultado da T16 (total do trace × painel da Anthropic, histórico depois
 - T14: o detalhe e o download procuram primeiro na memória (dublagem viva, com posição na fila) e depois no banco (`JobsRepositorio.carregar` remonta um `Job` com o `Trace`, então o formato é o mesmo do SSE). O SSE continua só para jobs da memória. `GET /jobs` devolve `duracaoMs` pronto. Vídeo com arquivo apagado: 404. No `interrompido` não há `etapaDoErro`; a etapa sem `fim` é onde parou.
 
 - Ponto em aberto (fora do escopo, apareceu na T16): o usuário ouve um "ti"/chiadinho entre as falas do vídeo dublado. Hipótese não confirmada: `apararSilencio` (`back/src/ffmpeg/ffmpeg.service.ts:117`) corta a voz sem fade nas pontas → clique no começo e no fim de cada fala (só as cortadas têm fade, `ffmpeg.service.ts:85`). Alternativa: resto da voz original no fundo do Demucs. Oferecido como tarefa curta sem custo; o usuário decidiu deixar para depois desta tarefa (2026-11-17).
+
+- T16, painel da Anthropic: o painel mostrou US$ 0,19 no dia (17/11 UTC, atualizado 23:37). Preços conferem (tokens do painel × nossa tabela = US$ 0,20) e o Haiku bate (painel 28.664/10.546 ≥ job 26.863/8.447). O Sonnet não: o painel mostra 24.520/14.174 no dia, e só este job recebeu da API 52.390/28.048 (a tradução sozinha, 24.817 de saída). O SDK 1.9.0 atribui o `usage` em vez de somar (`BetaMessageStream.js:543`), então o trace é o que a API respondeu. Hipótese não confirmada: o painel ainda não tinha consolidado o Sonnet. Pendente: o usuário olha o dia 17 no Usage filtrado em Sonnet 5.5; ≥ ~52 mil de entrada e ~28 mil de saída confirma. Ele decidiu fechar a T16 e entregar sem esperar (2026-11-17).
+- T16: a resposta da AssemblyAI não fica registrada, então o `speech_model` não foi conferido; o preço segue o da página oficial (decisão dele).
 
 ## Hipóteses descartadas
 
