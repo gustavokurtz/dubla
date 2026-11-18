@@ -1,8 +1,8 @@
 # Estado — Ver quanto custa cada dublagem e acompanhar o processamento de verdade
 
 **Atualizado em:** 2026-11-17 (T15 feita, T16 esperando o dev)
-**Etapa:** execucao
-**Último review:** 0711d0d (fase 2) — sem achados ≥ 80
+**Etapa:** concluida
+**Último review:** f4f082e (fase 3, última) — sem achados ≥ 80
 
 ## Onde paramos
 
@@ -17,7 +17,7 @@ Fases 1 e 2 fechadas (custo por chamada, Sonnet/Haiku, jobs em fila com progress
 - T14 — feito (suíte 120 verde; ensaio reiniciado: `GET /jobs` lista os 2 do banco com duração e custo, `GET /jobs/<interrompido>` traz as etapas, vídeo do pronto 200 com 14,6 MB, id inexistente 404)
 - T15 — feito (front `tsc -b`, eslint e `pnpm build` verdes; screenshots desktop 1280 e celular 390 do histórico, do trace pronto e do interrompido lidos do Postgres local, e do trace com chamadas pagas por resposta simulada no navegador)
 - T16 — feito (rodada paga do usuário: guillotine do Giancarlo Bodoni por link, job 3a838efd, 11 min 20 s de áudio, ~10 min, US$ 0,57 = Claude 0,39 + AssemblyAI 0,18; histórico e download funcionaram depois de reiniciar o back). Conferência com o painel da Anthropic pendente, ver Aprendizados
-- Entrega — pendente (verificação, push + PR para master)
+- Entrega — feito (push + PR para master)
 
 ## Próximo passo
 
@@ -75,4 +75,11 @@ Fim da fase 3 (suíte, lint, typecheck, build, code review desde 0711d0d) e entr
 
 ## Resultado
 
-Preencher na entrega.
+- 3 fases, T1–T16 feitas; commits em `git log master..HEAD`.
+- Verificação final: jest 24 suítes / 120 testes verdes, eslint e tsc do back limpos, front `tsc -b` + eslint limpos, `pnpm build` verde.
+- Reviews: fase 1 e 2 sem achados ≥ 80; fase 3 (f4f082e) sem achados ≥ 80 e com cobertura R1–R10 conferida.
+- Rodada paga (T16): guillotine por link, US$ 0,57 (Claude 0,39, AssemblyAI 0,18); histórico e download depois de reiniciar ok.
+- Ficou de fora / pendente:
+  - Conferir o Sonnet de 17/11 no painel da Anthropic (ver Aprendizados, T16).
+  - "Ti" entre as falas do áudio dublado (ponto em aberto, o usuário deixou para depois).
+  - Abaixo de 80 no review da fase 3: duração do `interrompido` inclui o tempo com o back parado; job de link fica com a URL como nome (título do YouTube não guardado); `back/prisma.config.ts` usa `process.loadEnvFile('../.env')` e o `postinstall` roda `prisma generate`, então `pnpm install` num clone sem `.env` falha.
