@@ -53,7 +53,7 @@ Ler o resultado da T16 (total do trace × painel da Anthropic, histórico depois
 
 - T14: o detalhe e o download procuram primeiro na memória (dublagem viva, com posição na fila) e depois no banco (`JobsRepositorio.carregar` remonta um `Job` com o `Trace`, então o formato é o mesmo do SSE). O SSE continua só para jobs da memória. `GET /jobs` devolve `duracaoMs` pronto. Vídeo com arquivo apagado: 404. No `interrompido` não há `etapaDoErro`; a etapa sem `fim` é onde parou.
 
-- Ponto em aberto (fora do escopo, apareceu na T16): o usuário ouve um "ti"/chiadinho entre as falas do vídeo dublado. Hipótese não confirmada: `apararSilencio` (`back/src/ffmpeg/ffmpeg.service.ts:117`) corta a voz sem fade nas pontas → clique no começo e no fim de cada fala (só as cortadas têm fade, `ffmpeg.service.ts:85`). Alternativa: resto da voz original no fundo do Demucs. Oferecido como tarefa curta sem custo; aguardando decisão.
+- Ponto em aberto (fora do escopo, apareceu na T16): o usuário ouve um "ti"/chiadinho entre as falas do vídeo dublado. Hipótese não confirmada: `apararSilencio` (`back/src/ffmpeg/ffmpeg.service.ts:117`) corta a voz sem fade nas pontas → clique no começo e no fim de cada fala (só as cortadas têm fade, `ffmpeg.service.ts:85`). Alternativa: resto da voz original no fundo do Demucs. Oferecido como tarefa curta sem custo; o usuário decidiu deixar para depois desta tarefa (2026-11-17).
 
 ## Hipóteses descartadas
 
