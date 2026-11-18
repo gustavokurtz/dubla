@@ -20,25 +20,30 @@ flowchart LR
     I --> J[Dubbed MP4<br/>+ JSON report]
 ```
 
-`IngestionService.dublar` runs the pipeline:
+Each upload or link becomes a job. Jobs wait in a queue and run one at a time (`back/src/jobs/`); the request returns right away with the job id, and the UI follows the job over SSE. `IngestionService.dublar` runs the pipeline for each job:
 
 1. **Download (optional).** yt-dlp fetches the video (H.264, up to 720p) when a link is given.
 2. **Extract audio.** ffmpeg pulls an MP3 out of the video.
 3. **Split voice and background.** Demucs (`htdemucs`, two stems) runs locally and keeps the music and ambient sound for the final mix.
 4. **Transcribe.** AssemblyAI returns words with timestamps and speaker labels, helped by a list of ~100 BJJ terms. The words are cut into lines: one speaker each, split at sentence ends or pauses once a line has at least 1.5 s, always split on a speaker change, a pause of 1.5 s or more, or at ~12 s.
-5. **Translate.** One Claude call sees the whole video, fixes transcription mistakes in the English ("judo gatame" → "juji gatame") and translates each line with a character budget based on its duration.
-6. **Judge.** A second Claude prompt reviews every line (BJJ terms, natural spoken Portuguese, meaning, length). Rejected lines go back to the translator with the reason, at most twice.
+5. **Translate.** One Claude call (Sonnet 5.5, high effort) sees the whole video, fixes transcription mistakes in the English ("judo gatame" → "juji gatame") and translates each line with a character budget based on its duration.
+6. **Judge.** A second Claude prompt (Haiku 5.5) reviews every line (BJJ terms, natural spoken Portuguese, meaning, length). Rejected lines go back to the translator with the reason, at most twice.
 7. **Voice.** AssemblyAI TTS reads each line. The person who talks the most gets `aai-cassio`, the second `aai-benicio`; from a third speaker on, the two voices alternate. Requests are paced to the account limit of 50 per minute, and the silence the TTS adds at both ends is trimmed.
 8. **Fit.** Each line must start at its original time and end before the next one. If it is too long: speed up to 15% → run over the following silence → ask Claude to shorten it (up to 3 times) → cut it at the next line with a short fade. The video itself is never cut or slowed down.
 9. **Mix.** ffmpeg delays each line to its original start and mixes them over the background. The video stream is copied untouched and the output keeps the original duration.
 
-A JSON report per video goes to `relatorios/` at the repo root: speaker, English, Portuguese, judge verdict, original vs. dubbed start, and whether the line was shortened, sped up or cut.
+The dubbed MP4 is saved to `dublados/<job id>.mp4` at the repo root.
+
+Every job is also traced: each of the 7 steps with its start, end and progress, and every paid call (Claude role, model, tokens; seconds transcribed; characters voiced) with its cost in US$. The trace is written to a local Postgres while the job runs, so the history survives a restart. A job that was queued or running when the backend stopped is marked `interrompido` on the next start, with the money spent so far.
+
+A JSON report per video also goes to `relatorios/` at the repo root: speaker, English, Portuguese, judge verdict, original vs. dubbed start, and whether the line was shortened, sped up or cut.
 
 ## Stack
 
 | | |
 | --- | --- |
 | Backend | NestJS 11 · TypeScript · fluent-ffmpeg · Multer |
+| Database | PostgreSQL 17 (Docker) · Prisma 7 |
 | AI | AssemblyAI (transcription, TTS) · Claude (translation, judge) |
 | Local tools | Demucs (PyTorch, CUDA if available) · yt-dlp |
 | Frontend | React 19 · Vite · Tailwind CSS v4 |
@@ -46,7 +51,9 @@ A JSON report per video goes to `relatorios/` at the repo root: speaker, English
 
 ## Run it locally
 
-Requirements: Node.js 20+, pnpm, ffmpeg on your PATH, Python 3.12 and [uv](https://docs.astral.sh/uv/).
+Requirements: Node.js 20+, pnpm, ffmpeg on your PATH, Docker (with Compose), Python 3.12 and [uv](https://docs.astral.sh/uv/).
+
+Create the `.env` (see [Keys](#keys)) before installing: `pnpm install` runs `prisma generate`, which reads it.
 
 ```bash
 git clone https://github.com/gustavokurtz/dubla.git
@@ -75,7 +82,17 @@ Create a `.env` file at the **repository root** (not inside `back/`):
 ```bash
 ASSEMBLYAI_API_KEY=your-assemblyai-key
 ANTHROPIC_API_KEY=your-anthropic-key
+DATABASE_URL=postgresql://dubla:dubla@localhost:5433/dubla
 # FERRAMENTAS_PYTHON=/path/to/python   # optional, defaults to back/.venv-py/bin/python
+```
+
+### Database
+
+The history lives in a local Postgres on port 5433:
+
+```bash
+docker compose up -d                       # from the repo root
+cd back && npx prisma migrate deploy && cd ..
 ```
 
 ### Start
@@ -84,31 +101,37 @@ ANTHROPIC_API_KEY=your-anthropic-key
 pnpm dev          # backend on :3000, frontend on http://localhost:5173
 ```
 
-Paste a YouTube link or drop a video and wait for the download. The frontend proxies `/api` to `localhost:3000`.
+Paste a YouTube link or drop a video. The screen shows the current step (n of 7), lines done, elapsed time and money spent so far; you can close the tab and pick the video up later from **Ver histórico**. Each job in the history opens its trace: time and cost per step, every Claude call, the voices and the totals for Claude and AssemblyAI. The frontend proxies `/api` to `localhost:3000`.
 
 ## Cost and time
 
-Measured on a 4:45 instructional with one speaker (72 lines): about 4 minutes end to end and about US$0.42 (Claude ~US$0.35, AssemblyAI ~US$0.07). Both grow roughly with video length; the voice step is bound by the 50-requests-per-minute limit.
+Every job shows its own cost in the trace. Measured on an 11:20 instructional from a YouTube link: about 10 minutes end to end and US$0.57 (Claude US$0.39, of which US$0.29 is the translation; AssemblyAI US$0.18). Both grow roughly with video length; the voice step is bound by the 50-requests-per-minute limit. Prices live in `back/src/custos/precos.ts`.
 
 ## API
 
-`POST /ingestion/dublar` with `multipart/form-data`:
-
-- `url`: a YouTube link, or
-- `video`: a `video/*` file up to 100 MB
-
-Returns the dubbed video as `video/mp4` (`video-dublado.mp4`). If both are sent, the link wins.
+| Route | What it does |
+| --- | --- |
+| `POST /jobs` | `multipart/form-data` with `url` (a YouTube link) or `video` (a `video/*` file up to 100 MB). Queues the job and returns `{ id }`. If both are sent, the link wins. |
+| `GET /jobs` | History, newest first: name, status, duration, cost. |
+| `GET /jobs/:id` | Status, queue position, steps and paid calls with cost. |
+| `GET /jobs/:id/eventos` | Server-sent events with the same state on every change, for a job running in this process. |
+| `GET /jobs/:id/video` | The dubbed MP4, once the job is `pronto`. |
 
 ```bash
-curl -F 'url=https://www.youtube.com/watch?v=...' http://localhost:3000/ingestion/dublar -o dublado.mp4
-curl -F "video=@lesson.mp4" http://localhost:3000/ingestion/dublar -o dublado.mp4
+curl -F 'url=https://www.youtube.com/watch?v=...' http://localhost:3000/jobs
+curl -F "video=@lesson.mp4" http://localhost:3000/jobs
+curl http://localhost:3000/jobs/<id>/video -o dublado.mp4
 ```
 
 ## Project layout
 
 ```
 back/                   NestJS API and pipeline
-  src/ingestion/        orchestrator + endpoint
+  src/jobs/             queue, routes, Postgres history
+  src/trace/            steps and paid calls of a job
+  src/custos/           prices and cost per call
+  src/banco/            Prisma client
+  src/ingestion/        pipeline orchestrator
   src/youtube/          yt-dlp download
   src/separacao/        Demucs voice/background split
   src/transcricao/      AssemblyAI transcription + cutting into lines
@@ -117,9 +140,11 @@ back/                   NestJS API and pipeline
   src/encaixe/          fitting each line in its time slot
   src/ffmpeg/           audio extraction, silence trim, final mix
   src/relatorio/        per-video JSON report
-  scripts/              manual scripts (download, voice probe, no-cost rehearsal)
+  prisma/               schema and migrations
+  scripts/              manual scripts (download, voice probe, model comparison, no-cost rehearsal)
   requirements-python.txt
-front/                  React UI (upload or link, progress, download)
+front/                  React UI (upload or link, progress, history, trace)
+docker-compose.yml      local Postgres
 ```
 
 ## Limitations
@@ -127,8 +152,8 @@ front/                  React UI (upload or link, progress, download)
 - Runs locally only. Deploying needs a GPU host for Demucs (or a hosted Demucs) and YouTube often blocks downloads from cloud IPs.
 - The whole video is translated in one Claude call, which caps it at roughly 35 minutes of speech.
 - Two voices: with three or more speakers, voices repeat.
-- The request stays open for the whole pipeline and nothing is resumable: a failure halfway loses the paid steps already done.
-- The progress bar in the UI cycles through the steps; it does not track the real one.
+- The queue lives in memory and nothing is resumable: if the backend stops, queued and running jobs are marked `interrompido` and must be sent again; the paid steps already done are lost (but recorded).
+- A job sent by link keeps the URL as its name in the history.
 
 ## Tests
 
