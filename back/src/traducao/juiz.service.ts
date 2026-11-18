@@ -51,6 +51,7 @@ export class JuizService {
     }));
     const saida = await chamarClaude(
       this.cliente,
+      { papel: 'juiz' },
       SYSTEM,
       SaidaJuiz,
       `Falas para julgar:\n\n${JSON.stringify(entrada, null, 2)}`,

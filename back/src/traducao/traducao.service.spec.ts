@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { TraducaoService } from './traducao.service';
 import { Fala } from '../shared/types';
+import { rodarNoTrace, Trace } from '../trace/trace';
 
 interface PedidoStream {
   model: string;
@@ -69,7 +70,7 @@ describe('TraducaoService', () => {
 
       expect(streamMock).toHaveBeenCalledTimes(1);
       const pedido = streamMock.mock.calls[0][0];
-      expect(pedido.model).toBe('claude-opus-5-5');
+      expect(pedido.model).toBe('claude-sonnet-5-5');
       expect(pedido.output_config.effort).toBe('high');
       expect(pedido.fallbacks).toBe('default');
       expect(pedido.betas).toContain('server-side-fallback-2026-07-01');
@@ -162,5 +163,48 @@ describe('TraducaoService', () => {
       const reprovada = { ...falas[1], textoEnCorrigido: 'x', textoPt: 'y' };
       await expect(service.refazer([reprovada], new Map([[1, 'm']]))).rejects.toThrow(/fala 1/);
     });
+  });
+
+  it('registra no trace o papel de cada chamada: tradução, refazer e encurtar', async () => {
+    streamMock
+      .mockReturnValueOnce(
+        respostaDoClaude({
+          falas: [
+            { id: 0, textoEnCorrigido: 'a', textoPt: 'a' },
+            { id: 1, textoEnCorrigido: 'b', textoPt: 'b' },
+          ],
+        }),
+      )
+      .mockReturnValueOnce(
+        respostaDoClaude({ falas: [{ id: 1, textoEnCorrigido: 'b', textoPt: 'c' }] }),
+      )
+      .mockReturnValueOnce(respostaDoClaude({ textoPt: 'd' }));
+    const trace = new Trace();
+
+    await rodarNoTrace(trace, async () => {
+      const [primeira, segunda] = await service.traduzir(falas);
+      await service.refazer([segunda], new Map([[1, 'm']]));
+      await service.encurtar(primeira, 10, 'm');
+    });
+
+    expect(trace.chamadas.map((c) => c.papel)).toEqual(['traducao', 'refazer', 'encurtar']);
+  });
+
+  it('refazer e encurtar também usam o Sonnet 5.5 com esforço alto e fallback', async () => {
+    streamMock
+      .mockReturnValueOnce(
+        respostaDoClaude({ falas: [{ id: 1, textoEnCorrigido: 'b', textoPt: 'c' }] }),
+      )
+      .mockReturnValueOnce(respostaDoClaude({ textoPt: 'd' }));
+    const fala = { ...falas[1], textoEnCorrigido: 'b', textoPt: 'x' };
+
+    await service.refazer([fala], new Map([[1, 'm']]));
+    await service.encurtar(fala, 10, 'm');
+
+    for (const [pedido] of streamMock.mock.calls) {
+      expect(pedido.model).toBe('claude-sonnet-5-5');
+      expect(pedido.output_config.effort).toBe('high');
+      expect(pedido.fallbacks).toBe('default');
+    }
   });
 });

@@ -10,6 +10,7 @@ import { VozService } from '../voz/voz.service';
 import { YoutubeService } from '../youtube/youtube.service';
 import { encaixarFalas } from '../encaixe/encaixar-falas';
 import { gravarRelatorio, montarRelatorio } from '../relatorio/relatorio';
+import { traceAtual } from '../trace/trace';
 
 @Injectable()
 export class IngestionService {
@@ -27,30 +28,32 @@ export class IngestionService {
 
   // Baixa o vídeo do YouTube e dubla com o título como nome (R12).
   async dublarLink(url: string): Promise<Buffer> {
+    this.etapa('Baixando o vídeo');
     const { video, titulo } = await this.youtube.baixar(url);
     return this.dublar(video, titulo);
   }
 
   // Dubla o vídeo fala por fala, cada uma no instante da original, e grava o relatório.
   async dublar(video: Buffer, nome: string): Promise<Buffer> {
-    this.logger.log(`1/7 Extraindo áudio de "${nome}"`);
+    this.logger.log(`Dublando "${nome}"`);
+    this.etapa('Extraindo o áudio');
     const audio = await this.ffmpeg.extrairAudio(video);
 
-    this.logger.log('2/7 Separando voz e fundo');
+    this.etapa('Separando voz e fundo');
     const { fundo } = await this.separacao.separar(audio);
 
-    this.logger.log('3/7 Transcrevendo');
+    this.etapa('Transcrevendo');
     const falas = await this.transcricao.transcrever(audio);
 
-    this.logger.log('4/7 Traduzindo e revisando com o juiz');
+    this.etapa('Traduzindo e revisando');
     const traduzidas = await this.traducao.traduzir(falas);
     const revisadas = await revisarComJuiz(traduzidas, this.juiz, this.traducao);
 
-    this.logger.log('5/7 Gerando as vozes');
+    this.etapa('Gerando as vozes', revisadas.length);
     const audios = await this.voz.gerarAudios(revisadas);
     for (const a of audios) a.audio = await this.ffmpeg.apararSilencio(a.audio);
 
-    this.logger.log('6/7 Encaixando cada fala no tempo');
+    this.etapa('Encaixando as falas', revisadas.length);
     const encaixadas = await encaixarFalas(
       revisadas,
       audios,
@@ -63,7 +66,7 @@ export class IngestionService {
       },
     );
 
-    this.logger.log('7/7 Montando o vídeo');
+    this.etapa('Montando o vídeo');
     const final = await this.ffmpeg.montarVideo(
       video,
       fundo,
@@ -81,5 +84,11 @@ export class IngestionService {
     );
     this.logger.log(`Relatório: ${arquivo}\n${JSON.stringify(relatorio.resumo, null, 2)}`);
     return final;
+  }
+
+  // Abre a etapa no trace do job (se houver) e deixa a linha no log do servidor.
+  private etapa(nome: string, total?: number): void {
+    this.logger.log(total === undefined ? nome : `${nome} (${total} falas)`);
+    traceAtual()?.iniciarEtapa(nome, total);
   }
 }

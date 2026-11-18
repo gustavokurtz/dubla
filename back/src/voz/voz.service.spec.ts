@@ -2,6 +2,8 @@ import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { Fala } from '../shared/types';
 import { VozService, VOZES_PT } from './voz.service';
+import { custoVoz } from '../custos/custo';
+import { rodarNoTrace, Trace } from '../trace/trace';
 
 const fetchMock = jest.fn();
 
@@ -68,6 +70,18 @@ describe('VozService', () => {
       encoding: 'mp3',
       stream: false,
     });
+  });
+
+  it('conta cada fala pronta na etapa das vozes', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(respostaOk('mp3')));
+    const trace = new Trace();
+    trace.iniciarEtapa('Gerando as vozes', 2);
+
+    await rodarNoTrace(trace, () =>
+      service.gerarAudios([fala(1, 'A', 0, 1, 'Oi'), fala(2, 'A', 1, 2, 'Tá')]),
+    );
+
+    expect(trace.etapas[0]).toMatchObject({ feito: 2, total: 2 });
   });
 
   it('erro HTTP vira erro explícito com a fala e a resposta', async () => {
@@ -138,5 +152,20 @@ describe('VozService', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('soma no trace os caracteres enviados e o custo das vozes', async () => {
+    fetchMock.mockResolvedValue(respostaOk('mp3'));
+    const trace = new Trace();
+
+    await rodarNoTrace(trace, async () => {
+      await service.sintetizar(1, 'Pega a gola', VOZES_PT[0]);
+      await service.sintetizar(2, 'Tá', VOZES_PT[0]);
+    });
+
+    expect(trace.chamadas).toEqual([
+      expect.objectContaining({ servico: 'assemblyai-voz', quantidade: 2, caracteres: 13 }),
+    ]);
+    expect(trace.custoTotal()).toBeCloseTo(custoVoz(13), 12);
   });
 });

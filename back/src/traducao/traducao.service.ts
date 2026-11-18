@@ -49,6 +49,7 @@ export class TraducaoService {
     this.logger.log(`Traduzindo ${falas.length} falas`);
     const saida = await chamarClaude(
       this.cliente,
+      { papel: 'traducao' },
       SYSTEM,
       SaidaTraducao,
       `Falas do vídeo, em ordem:\n\n${JSON.stringify(falas.map(entradaDaFala), null, 2)}`,
@@ -70,6 +71,7 @@ export class TraducaoService {
     }));
     const saida = await chamarClaude(
       this.cliente,
+      { papel: 'refazer' },
       SYSTEM,
       SaidaTraducao,
       `O revisor reprovou estas falas. Escreva uma nova versão em português de cada uma, corrigindo o que o motivo aponta.\n\n${JSON.stringify(entrada, null, 2)}`,
@@ -87,6 +89,7 @@ export class TraducaoService {
     };
     const saida = await chamarClaude(
       this.cliente,
+      { papel: 'encurtar' },
       SYSTEM,
       SaidaEncurtar,
       `Esta fala dublada não cabe no tempo. Reescreva o português mais curto, com no máximo o alvo de caracteres, mantendo a instrução técnica e o registro do tatame. Devolva só essa fala.\n\n${JSON.stringify(pedido, null, 2)}`,

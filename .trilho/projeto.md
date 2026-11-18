@@ -31,7 +31,7 @@ Conventional Commits em inglês, minúsculo, sem escopo, sem ponto final. Exempl
 ## Stack e estrutura
 
 - Monorepo pnpm: `back/` (NestJS 11, Jest 30, ts-jest) e `front/` (React 19 + Vite + Tailwind v4).
-- Backend: um módulo Nest por integração (`back/src/<servico>/<servico>.module.ts|service.ts`), orquestrado por `back/src/ingestion/ingestion.service.ts`. Endpoint único `POST /ingestion/dublar`.
+- Backend: um módulo Nest por integração (`back/src/<servico>/<servico>.module.ts|service.ts`), orquestrado por `back/src/ingestion/ingestion.service.ts`. Dublagem em fila: `POST /jobs` (arquivo ou link), `GET /jobs` (histórico), `GET /jobs/:id`, `GET /jobs/:id/eventos` (SSE), `GET /jobs/:id/video`; `back/src/jobs/` (2026-11-17).
 - Tipos compartilhados em `back/src/shared/types.ts`. Testes ao lado do arquivo (`*.spec.ts`).
 - `.env` na raiz (lido por `ConfigModule` com `path.join(process.cwd(), '..', '.env')`).
 
@@ -39,7 +39,7 @@ Conventional Commits em inglês, minúsculo, sem escopo, sem ponto final. Exempl
 
 - Nomes de domínio, métodos e logs em português (ver `back/src/ffmpeg/ffmpeg.service.ts`).
 - Arquivos temporários do ffmpeg em `mkdtemp` + limpeza em `finally` (ver `back/src/ffmpeg/ffmpeg.service.ts`).
-- Processamento em memória com `Buffer`, sem persistência.
+- Processamento em memória com `Buffer`. Persistidos: o MP4 em `dublados/<id>.mp4` e o histórico (job, etapas, chamadas pagas com custo) no Postgres local (2026-11-17).
 
 ## Regras fixas
 
@@ -50,12 +50,15 @@ Conventional Commits em inglês, minúsculo, sem escopo, sem ponto final. Exempl
 
 ## Áreas sensíveis
 
-- Sem banco de dados.
+- Postgres local do histórico: `docker compose up -d` na raiz (porta 5433). Migrations (`cd back && npx prisma migrate dev`) só com `DATABASE_URL` em `localhost:5433` (2026-11-17).
 - Serviços externos pagos: AssemblyAI (`ASSEMBLYAI_API_KEY`), Anthropic (`ANTHROPIC_API_KEY`). Avisar antes de qualquer rodada real.
 
 ## Armadilhas
 
-- `pkill -f <padrão>` no Bash mata o próprio shell; parar o back com `kill $(pgrep -f "ts-nod[e] src/main")` (2026-11-17).
+- `back/prisma.config.ts` lê `../.env` e o `postinstall` roda `prisma generate`: sem `.env` na raiz, `pnpm install` falha (2026-11-17).
+- Custo real de uma dublagem: `docker compose exec -T postgres psql -U dubla -d dubla` e somar `custo` da tabela `"Chamada"` por `"jobId"` (só leitura) (2026-11-17).
+
+- `pkill -f <padrão>` no Bash mata o próprio shell; parar o back com `kill $(pgrep -f "ts-nod[e].* src/main")` (o `.*` pega também o back subido com `npx ts-node`, que vira `ts-node/dist/bin.js src/main.ts`) (2026-11-17).
 - zsh expande `?` de links: link do YouTube sempre entre aspas no `curl -F 'url=…'` (2026-11-17).
 - AssemblyAI TTS: limite de 50 pedidos/min por conta (o `VozService` já respeita); a voz pronta põe silêncio nas pontas (o `IngestionService` já apara) (2026-11-17).
 - Python das ferramentas (Demucs, yt-dlp): `back/.venv-py` a partir de `back/requirements-python.txt` (comando no README) (2026-11-17).

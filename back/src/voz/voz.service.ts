@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Fala } from '../shared/types';
 import { atribuirVozes } from './atribuir-vozes';
+import { custoVoz } from '../custos/custo';
+import { traceAtual } from '../trace/trace';
 
 // Vozes prontas PT da AssemblyAI escolhidas pelo dev (T1): quem mais fala primeiro.
 export const VOZES_PT = ['aai-cassio', 'aai-benicio'];
@@ -49,6 +51,7 @@ export class VozService {
     for (const f of falas) {
       const voz = vozes[f.pessoa].voz;
       audios.push({ id: f.id, voz, audio: await this.sintetizar(f.id, f.textoPt, voz) });
+      traceAtual()?.avancar();
     }
     return audios;
   }
@@ -59,6 +62,7 @@ export class VozService {
   async sintetizar(id: number, texto: string, voz: string): Promise<Buffer> {
     for (let tentativa = 1; ; tentativa++) {
       await this.respeitarLimite();
+      const inicio = Date.now();
       const resposta = await fetch(URL_FALA, {
         method: 'POST',
         headers: { Authorization: this.chave, 'Content-Type': 'application/json' },
@@ -70,7 +74,10 @@ export class VozService {
           stream: false,
         }),
       });
-      if (resposta.ok) return Buffer.from(await resposta.arrayBuffer());
+      if (resposta.ok) {
+        traceAtual()?.somarVoz(texto.length, custoVoz(texto.length), Date.now() - inicio);
+        return Buffer.from(await resposta.arrayBuffer());
+      }
 
       const corpo = await resposta.text();
       const espera = esperaPedida(corpo);

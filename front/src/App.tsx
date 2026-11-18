@@ -1,27 +1,40 @@
 import { useState, useCallback, useEffect, useRef, type DragEvent, type ChangeEvent } from 'react'
+import { formatarDolar, formatarTempo } from './formato'
+import { Historico, Trace } from './Historico'
 
 const MAX_SIZE = 100 * 1024 * 1024 // 100MB
 
-const STEPS = [
-  'Separando voz e fundo...',
-  'Transcrevendo...',
-  'Traduzindo para português...',
-  'Revisando a tradução...',
-  'Gerando as vozes...',
-  'Encaixando cada fala no tempo...',
-  'Montando vídeo final...',
-]
+const TOTAL_ETAPAS = 7
+const BAIXANDO = 'Baixando o vídeo' // só nos links, antes das 7 etapas
 
 type Status = 'idle' | 'uploading' | 'done' | 'error'
 
+// Estado da dublagem como o servidor manda (GET /jobs/:id e cada evento do SSE).
+interface EstadoJob {
+  id: string
+  situacao: 'na fila' | 'dublando' | 'pronto' | 'falhou'
+  posicao?: number
+  iniciadoEm?: string
+  terminadoEm?: string
+  erro?: string
+  etapaDoErro?: string
+  custo: number
+  etapas: { nome: string; feito?: number; total?: number }[]
+}
+
+// O que o card mostra: a dublagem (envio e acompanhamento), o histórico ou o trace de uma dublagem.
+type Tela = { tipo: 'dublar' } | { tipo: 'historico' } | { tipo: 'trace'; id: string }
+
 function App() {
+  const [tela, setTela] = useState<Tela>({ tipo: 'dublar' })
   const [status, setStatus] = useState<Status>('idle')
   const [file, setFile] = useState<File | null>(null)
   const [link, setLink] = useState('')
-  const [blob, setBlob] = useState<Blob | null>(null)
+  const [job, setJob] = useState<EstadoJob | null>(null)
+  const [agora, setAgora] = useState(() => Date.now())
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(false)
-  const [stepIndex, setStepIndex] = useState(0)
+  const eventosRef = useRef<EventSource | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = useCallback((f: File) => {
@@ -60,23 +73,47 @@ function App() {
     setStatus('idle')
     setFile(null)
     setLink('')
-    setBlob(null)
+    setJob(null)
     setError('')
+  }
+
+  // Acompanha a dublagem pelo servidor até ela terminar (pronto ou falhou).
+  const acompanhar = (id: string) => {
+    eventosRef.current?.close()
+    const eventos = new EventSource(`/api/jobs/${id}/eventos`)
+    eventosRef.current = eventos
+    eventos.onmessage = ({ data }) => {
+      const estado = JSON.parse(data) as EstadoJob
+      setJob(estado)
+      if (estado.situacao === 'pronto') {
+        eventos.close()
+        setStatus('done')
+      } else if (estado.situacao === 'falhou') {
+        eventos.close()
+        setError(`Falhou em ${estado.etapaDoErro ?? 'uma etapa'}: ${estado.erro}`)
+        setStatus('error')
+      }
+    }
+    eventos.onerror = () => {
+      // Aberto = o navegador reconecta sozinho; fechado = o servidor não conhece mais o job.
+      if (eventos.readyState !== EventSource.CLOSED) return
+      setError('O acompanhamento parou: o servidor não encontrou esta dublagem (ele foi reiniciado?)')
+      setStatus('error')
+    }
   }
 
   const enviar = async (form: FormData) => {
     setStatus('uploading')
-    setStepIndex(0)
+    setJob(null)
 
     try {
-      const res = await fetch('/api/ingestion/dublar', { method: 'POST', body: form })
+      const res = await fetch('/api/jobs', { method: 'POST', body: form })
       if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Erro ${res.status}`)
+        const corpo = (await res.json().catch(() => null)) as { message?: string } | null
+        throw new Error(corpo?.message ?? `Erro ${res.status}`)
       }
-      const resultBlob = await res.blob()
-      setBlob(resultBlob)
-      setStatus('done')
+      const { id } = (await res.json()) as { id: string }
+      acompanhar(id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
       setStatus('error')
@@ -97,17 +134,33 @@ function App() {
     enviar(form)
   }
 
+  // Relógio do tempo decorrido enquanto dubla.
   useEffect(() => {
     if (status !== 'uploading') return
-    const interval = setInterval(() => {
-      setStepIndex((i) => (i + 1) % STEPS.length)
-    }, 4000)
-    return () => clearInterval(interval)
+    const relogio = setInterval(() => setAgora(Date.now()), 1000)
+    return () => clearInterval(relogio)
   }, [status])
+
+  useEffect(() => () => eventosRef.current?.close(), [])
+
+  const etapaAtual = job?.etapas.at(-1)
+  const numeroDaEtapa = job?.etapas.filter((e) => e.nome !== BAIXANDO).length ?? 0
+  const temContagem = etapaAtual?.total !== undefined && etapaAtual.total > 0
+  const fracao = temContagem ? (etapaAtual!.feito ?? 0) / etapaAtual!.total! : 0
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/20 p-4">
-      <div className="bg-white/70 backdrop-blur-xl border border-white/90 rounded-2xl shadow-sm p-10 max-w-sm w-full">
+      <div
+        className={`bg-white/70 backdrop-blur-xl border border-white/90 rounded-2xl shadow-sm w-full ${
+          tela.tipo === 'dublar' ? 'p-10 max-w-sm' : 'p-6 sm:p-10 max-w-2xl my-8'
+        }`}
+      >
+        {tela.tipo === 'historico' && (
+          <Historico onAbrir={(id) => setTela({ tipo: 'trace', id })} onVoltar={() => setTela({ tipo: 'dublar' })} />
+        )}
+        {tela.tipo === 'trace' && <Trace id={tela.id} onVoltar={() => setTela({ tipo: 'historico' })} />}
+
+        {tela.tipo === 'dublar' && (<>
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             dubla<span className="text-indigo-500">.</span>
@@ -183,20 +236,68 @@ function App() {
                 Dublar link
               </button>
             )}
+
+            <button
+              onClick={() => setTela({ tipo: 'historico' })}
+              className="block mx-auto text-sm text-indigo-500 hover:text-indigo-600 mt-6 font-medium cursor-pointer"
+            >
+              Ver histórico
+            </button>
           </>
         )}
 
         {status === 'uploading' && (
-          <div className="text-center">
-            <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full w-full rounded-full bg-gradient-to-r from-slate-900 via-indigo-400 to-slate-900 bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite]" />
+          <div aria-live="polite">
+            {!job || job.situacao === 'na fila' ? (
+              <>
+                <p className="text-sm font-semibold text-slate-900">
+                  {job ? 'Na fila' : 'Enviando o vídeo'}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {job?.posicao
+                    ? `${job.posicao} ${job.posicao === 1 ? 'vídeo' : 'vídeos'} antes deste. Começa quando ${job.posicao === 1 ? 'ele terminar' : 'eles terminarem'}.`
+                    : 'Começa em instantes.'}
+                </p>
+              </>
+            ) : (
+              <>
+                {etapaAtual?.nome !== BAIXANDO && (
+                  <p className="text-xs text-slate-400">
+                    Etapa {numeroDaEtapa} de {TOTAL_ETAPAS}
+                  </p>
+                )}
+                <p className="text-sm font-semibold text-slate-900 mt-0.5">{etapaAtual?.nome ?? 'Começando'}</p>
+              </>
+            )}
+
+            <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden mt-4">
+              {temContagem ? (
+                <div
+                  className="h-full rounded-full bg-indigo-500 transition-[width] duration-300"
+                  style={{ width: `${Math.round(fracao * 100)}%` }}
+                />
+              ) : (
+                <div className="h-full w-full rounded-full bg-gradient-to-r from-slate-900 via-indigo-400 to-slate-900 bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite]" />
+              )}
             </div>
-            <p className="text-sm text-slate-600 mt-4 font-medium">{STEPS[stepIndex]}</p>
-            <p className="text-xs text-slate-400 mt-1">Isso pode levar alguns minutos</p>
+
+            {job?.situacao === 'dublando' && (
+              <>
+                {temContagem && (
+                  <p className="text-xs text-slate-600 mt-2">
+                    {etapaAtual!.feito ?? 0} de {etapaAtual!.total} falas
+                  </p>
+                )}
+                <div className="flex justify-between text-xs text-slate-400 mt-3 tabular-nums">
+                  <span>{job.iniciadoEm ? formatarTempo(agora - Date.parse(job.iniciadoEm)) : ''}</span>
+                  <span>{formatarDolar(job.custo)} até agora</span>
+                </div>
+              </>
+            )}
           </div>
         )}
 
-        {status === 'done' && blob && (
+        {status === 'done' && job && (
           <div className="text-center">
             <div className="mx-auto w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
               <svg className="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -204,25 +305,33 @@ function App() {
               </svg>
             </div>
             <p className="text-sm font-semibold text-slate-900">Vídeo dublado pronto!</p>
-            <button
-              onClick={() => {
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = 'video-dublado.mp4'
-                a.click()
-                setTimeout(() => URL.revokeObjectURL(url), 1000)
-              }}
-              className="w-full h-12 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors mt-4 cursor-pointer"
+            <p className="text-xs text-slate-400 mt-1 tabular-nums">
+              {job.iniciadoEm && job.terminadoEm
+                ? `${formatarTempo(Date.parse(job.terminadoEm) - Date.parse(job.iniciadoEm))}, `
+                : ''}
+              {formatarDolar(job.custo)}
+            </p>
+            <a
+              href={`/api/jobs/${job.id}/video`}
+              download
+              className="flex items-center justify-center w-full h-12 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors mt-4"
             >
               Baixar vídeo
-            </button>
-            <button
-              onClick={reset}
-              className="text-sm text-indigo-500 hover:text-indigo-600 mt-3 font-medium cursor-pointer"
-            >
-              Dublar outro vídeo
-            </button>
+            </a>
+            <div className="flex justify-center gap-5 mt-3">
+              <button
+                onClick={reset}
+                className="text-sm text-indigo-500 hover:text-indigo-600 font-medium cursor-pointer"
+              >
+                Dublar outro vídeo
+              </button>
+              <button
+                onClick={() => setTela({ tipo: 'trace', id: job.id })}
+                className="text-sm text-indigo-500 hover:text-indigo-600 font-medium cursor-pointer"
+              >
+                Ver custos
+              </button>
+            </div>
           </div>
         )}
 
@@ -235,14 +344,26 @@ function App() {
             </div>
             <p className="text-sm font-semibold text-slate-900">Algo deu errado</p>
             <p className="text-xs text-slate-400 mt-1">{error}</p>
+            {job && job.custo > 0 && (
+              <p className="text-xs text-slate-400 mt-1">Gasto até a falha: {formatarDolar(job.custo)}</p>
+            )}
             <button
               onClick={reset}
               className="w-full h-12 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors mt-4 cursor-pointer"
             >
               Tentar novamente
             </button>
+            {job && (
+              <button
+                onClick={() => setTela({ tipo: 'trace', id: job.id })}
+                className="text-sm text-indigo-500 hover:text-indigo-600 mt-3 font-medium cursor-pointer"
+              >
+                Ver custos
+              </button>
+            )}
           </div>
         )}
+        </>)}
       </div>
     </div>
   )
